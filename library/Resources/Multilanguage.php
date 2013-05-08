@@ -23,8 +23,6 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     {
         $options = $this->getOptions();
         if (null === $options) return null;
-
-        $requestDomain = $_SERVER['SERVER_NAME'];
         
         // Throw exceptions if 'domain' or 'languages' is missing from the options
         if (!isset($options['domain'])) {
@@ -36,7 +34,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         }
 
         // Perform browser language detection and redirection if the main domain is accessed
-        if ($requestDomain === $options['domain']) {
+        $domain = $_SERVER['SERVER_NAME'];
+        if ($domain === $options['domain']) {
             $this->locale = $this->getBootstrap()->getResource('locale');
             if (null === $this->locale) $this->locale = new Zend_Locale();
 
@@ -46,17 +45,16 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             // Do something about languages with specific scripts
             if ("zh" === $language) $script = $this->_detectChineseScript();
 
-            $iso639 = $language;
-            if ($script) $iso639 .= '_' . ucfirst(strtolower($script));
+            if ($script) $language .= '_' . ucfirst(strtolower($script));
 
             // Pick the first language as default if it is not listed as
             // a supported language
-            if (!in_array($iso639, $options['languages'])) {
-                $iso639 = $options['languages'][0];
+            if (!in_array($language, $options['languages'])) {
+                $language = $options['languages'][0];
             }
 
             // Perform 302 redirect
-            $subdomain = strtolower(str_replace('_', '-', $iso639));
+            $subdomain = strtolower(str_replace('_', '-', $language));
             $proto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== "off" ? 'https' : 'http';
             $redirect = $proto . "://" . $subdomain . "." . $options['domain'];
             $redirect .= $_SERVER['REQUEST_URI'];
