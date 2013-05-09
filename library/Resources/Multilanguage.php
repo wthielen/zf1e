@@ -106,6 +106,16 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     }
 
     /**
+     * Returns the default language
+     */
+    public function getDefault()
+    {
+        $options = $this->getOptions();
+
+        return @is_array($options['languages']) ? $options['languages'][0] : null;
+    }
+
+    /**
      * An helper function to return the script of the Chinese language used
      * based on the region. If no region is known, Simplified will be assumed.
      *
