@@ -68,7 +68,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         // Extract the language from the domain, and store it
         $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
         $parts = explode('-', $subdomain);
-        $language = $parts[0] . '_' . ucfirst($parts[1]);
+        $language = $parts[0];
+        if (isset($parts[1])) $language .= '_' . ucfirst($parts[1]);
 
         // Pick the default language if the given language is not supported
         if (!in_array($language, $options['languages'])) {
