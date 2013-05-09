@@ -3,6 +3,7 @@
 class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstract
 {
     private $locale;
+    private $language;
 
     /**
      * Resource initializer
@@ -63,6 +64,44 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             header('Location: ' . $redirect);
             exit();
         }
+
+        // Extract the language from the domain, and store it
+        $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
+        $parts = explode('-', $subdomain);
+        $language = $parts[0] . '_' . ucfirst($parts[1]);
+
+        // Pick the default language if the given language is not supported
+        if (!in_array($language, $options['languages'])) {
+            $language = $options['languages'][0];
+        }
+
+        $this->language = $language;
+    }
+
+    /**
+     * Returns the currently set language
+     */
+    public function getLanguage()
+    {
+        return $this->language;
+    }
+
+    /**
+     * Returns a list of languages, with their names in their respective 
+     * languages
+     */
+    public function getLanguages()
+    {
+        $options = $this->getOptions();
+
+        $ret = array();
+        if (@is_array($options['languages'])) {
+            foreach($options['languages'] as $lang) {
+                $ret[$lang] = Zend_Locale_Data::getContent($lang, 'language', $lang);
+            }
+        }
+
+        return $ret;
     }
 
     /**
