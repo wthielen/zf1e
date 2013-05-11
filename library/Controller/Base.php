@@ -32,6 +32,10 @@ class ZFE_Controller_Base extends Zend_Controller_Action
         $controller = $this->getRequest()->getControllerName();
         $action = $this->getRequest()->getActionName();
 
+        // Add the library's view helper path
+        $libraryPath = realpath(dirname(__FILE__) . '/..');
+        $this->view->addHelperPath($libraryPath . '/View/Helper', 'ZFE_View_Helper');
+
         // Automatically add CSS and JS
         $headLink = $this->view->headLink();
         $headLink->appendStylesheet('/css/default.css');
