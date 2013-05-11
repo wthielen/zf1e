@@ -55,13 +55,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             }
 
             // Perform 302 redirect
-            $subdomain = strtolower(str_replace('_', '-', $language));
-            $proto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== "off" ? 'https' : 'http';
-            $redirect = $proto . "://" . $subdomain . "." . $options['domain'];
-            $redirect .= $_SERVER['REQUEST_URI'];
-
             header('HTTP/1.1 302');
-            header('Location: ' . $redirect);
+            header('Location: ' . $this->composeUrl($language));
             exit();
         }
 
@@ -113,6 +108,23 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $options = $this->getOptions();
 
         return @is_array($options['languages']) ? $options['languages'][0] : null;
+    }
+
+    /**
+     * Creates the URL to load the given path in the given language.
+     * If no path is given, the current page's URL is used via
+     * $_SERVER['REQUEST_URI'].
+     */
+    public function composeUrl($language, $path = null)
+    {
+        $options = $this->getOptions();
+        if (is_null($path)) $path = $_SERVER['REQUEST_URI'];
+
+        $subdomain = strtolower(str_replace('_', '-', $language));
+        $proto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== "off" ? 'https' : 'http';
+        $url = $proto . "://" . $subdomain . "." . $options['domain'] . $path;
+
+        return $url;
     }
 
     /**
