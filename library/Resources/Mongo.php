@@ -11,6 +11,7 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
     private $port;
     private $username;
     private $password;
+    private $database;
 
     /**
      * Initialize the plugin
@@ -22,10 +23,16 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
     {
         $o = $this->getOptions();
 
+        if (empty($o['database']))
+        {
+            throw new Zend_Application_Resource_Exception('Please specify at least the Mongo database to use: resources.mongo.database');
+        }
+
         $this->host = isset($o['host']) ? $o['host'] : ini_get('mongo.default_host');
         $this->port = isset($o['port']) ? $o['port'] : ini_get('mongo.default_port');
         $this->username = isset($o['username']) ? $o['username'] : null;
         $this->password = isset($o['password']) ? $o['password'] : null;
+        $this->database = $o['database'];
 
         return $this;
     }
