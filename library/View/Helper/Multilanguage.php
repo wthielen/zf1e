@@ -11,13 +11,18 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      * The Multi-language view helper
      *
      * Returns HTML for the view control to select a language from
-     * the supported languages
+     * the supported languages.
+     *
+     * If the Multi-language resource plugin is not used, it will
+     * return an empty string.
      */
     public function multilanguage($type = self::TYPE_SELECT)
     {
         $front = Zend_Controller_Front::getInstance();
         $bootstrap = $front->getParam('bootstrap');
         $this->resource = $bootstrap->getPluginResource('Multilanguage');
+
+        if (null === $this->resource) return "";
 
         $fn = '_' . strtolower($type);
         if (!method_exists($this, $fn)) {
