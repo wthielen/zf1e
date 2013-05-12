@@ -1,6 +1,6 @@
 <?php
 
-class ZFE_Model_Db extends ZFE_Model_Base
+class ZFE_Model_Pdo extends ZFE_Model_Base
 {
     protected static $_pdo;
 
