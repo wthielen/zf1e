@@ -51,7 +51,7 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
             if ($this->username && $this->password) {
                 $uri .= $this->username . ":" . $this->password . "@";
             }
-            $uri .= $this->host . ":" . $this->port;
+            $uri .= $this->host . ":" . $this->port . "/" . $this->database;
             $this->connection = new MongoClient($uri);
         }
 
