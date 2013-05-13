@@ -10,25 +10,38 @@
  */
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
-    protected static $conn;
+    protected static $db;
+    protected static $collection;
 
     public function __construct()
     {
         parent::__construct();
 
-        if (is_null(static::$conn)) static::$conn = self::getConnection();
+        static::getDatabase();
     }
 
-    final public static function getConnection()
+    final public static function getCollection()
     {
-        $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
-
-        if (null === ($resource = $bootstrap->getPluginResource('Mongo'))) {
-            $bootstrap->registerPluginResource('Mongo');
-            $resource = $bootstrap->getPluginResource('Mongo');
-            $resource->init();
+        if (is_null(static::$collection)) {
+            throw new Exception("Please specify the collection name: protected static \$collection");
         }
 
-        return $resource->getConnection();
+        return static::getDatabase()->{static::$collection};
+    }
+
+    final public static function getDatabase()
+    {
+        if (null === static::$db) {
+            $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
+            if (null === ($resource = $bootstrap->getPluginResource('Mongo'))) {
+                $bootstrap->registerPluginResource('Mongo');
+                $resource = $bootstrap->getPluginResource('Mongo');
+                $resource->init();
+            }
+
+            static::$db = $resource->getDatabase();
+        }
+
+        return static::$db;
     }
 }

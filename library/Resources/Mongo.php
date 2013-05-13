@@ -38,23 +38,24 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
     }
 
     /**
-     * Creates the connection URI and returns the MongoClient instance.
+     * Creates the connection URI, the MongoClient instance, and returns
+     * the MongoDB instance from it.
      *
      * The PECL Mongo PHP library already does persistent connections since 
      * version 1.2, but here it is just for saving the process of composing 
      * the URI every time.
      */
-    public function getConnection()
+    public function getDatabase()
     {
         if (is_null($this->connection)) {
             $uri = "mongodb://";
             if ($this->username && $this->password) {
                 $uri .= $this->username . ":" . $this->password . "@";
             }
-            $uri .= $this->host . ":" . $this->port . "/" . $this->database;
+            $uri .= $this->host . ":" . $this->port;
             $this->connection = new MongoClient($uri);
         }
 
-        return $this->connection;
+        return $this->connection->{$this->database};
     }
 }
