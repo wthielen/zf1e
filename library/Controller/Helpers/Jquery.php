@@ -16,8 +16,8 @@ class ZFE_Controller_Helper_Jquery extends Zend_Controller_Action_Helper_Abstrac
 
             // CDN options
             'useCdn' => false,
-            'cdnHost' => '//code.jquery.com',
-            'coreVersion' => 'stable',
+            'cdnHost' => 'code.jquery.com',
+            'coreVersion' => null,
             'uiVersion' => null,
             'uiTheme' => 'smoothness',
 
@@ -47,21 +47,38 @@ class ZFE_Controller_Helper_Jquery extends Zend_Controller_Action_Helper_Abstrac
     // Use CDN to include jQuery files
     private function cdn()
     {
-        // Compose the base name, include requested version if required
+        // If a core version is not set, we do not know which version to get from the CDN
+        if (is_null(self::$options['coreVersion'])) {
+            throw new Exception('Please set a coreVersion in the jquery resource if you want to use jQuery: resources.jquery.coreVersion');
+        }
+
+        // Compose path and basename based on CDN host and version
         $basename = 'jquery';
-        if (self::$options['coreVersion'] !== 'stable') {
-            $basename = 'jquery-' . self::$options['coreVersion'];
+        $cdnHost = self::$options['cdnHost'];
+        $version = self::$options['coreVersion'];
+        switch($cdnHost) {
+        case 'code.jquery.com':
+            $path = '//' . $cdnHost;
+            $basename = $basename . '-' . $version;
+            break;
+        case 'ajax.aspnetcdn.com':
+            $path = '//' . $cdnHost . '/ajax/jQuery';
+            $basename = $basename . '-' . $version;
+            break;
+        case 'cdnjs.cloudflare.com':
+        case 'ajax.googleapis.com':
+            $path = '//' . $cdnHost . '/ajax/libs/jquery/' . $version;
+            break;
+        default:
+            throw new Exception("Unknown jQuery CDN: //$cdnHost");
         }
 
         // Use minified version if we are on a production environment
         if (APPLICATION_ENV == 'production') $basename .= '.min';
 
-        // Compose CDN URL for this JS asset
-        $url = self::$options['cdnHost'] . '/' . $basename . '.js';
-
         // Add file to view
         $view = $this->getActionController()->view;
-        $view->headScript()->appendFile($url);
+        $view->headScript()->appendFile($path . '/' . $basename . '.js');
 
         // If jQuery-UI is also requested
         if (self::$options['enableUi']) {
@@ -70,20 +87,40 @@ class ZFE_Controller_Helper_Jquery extends Zend_Controller_Action_Helper_Abstrac
                 throw new Exception('Please set a uiVersion in the jquery resource if you want to use jQuery UI: resources.jquery.uiVersion, or disable jQuery UI: resources.jquery.enableUi = 0');
             }
 
-            // Set basename, path and compose URL based on the application environment
+            // Compose path based on the given CDN
             $basename = 'jquery-ui';
-            $path = '/ui/' . self::$options['uiVersion'];
+            $version = self::$options['uiVersion'];
+            $theme = self::$options['uiTheme'];
+            switch($cdnHost) {
+            case 'code.jquery.com':
+                $path = '//' . $cdnHost . '/ui/' . $version;
+                break;
+            case 'ajax.aspnetcdn.com':
+                $path = '//' . $cdnHost . '/ajax/jquery.ui/' . $version;
+                break;
+            case 'ajax.googleapis.com':
+                $path = '//' . $cdnHost . '/ajax/libs/jqueryui/' . $version;
+                break;
+            case 'cdnjs.cloudflare.com':
+                // CloudFlare does not have a consistent jQuery UI path, and it does
+                // not host all the themes, so we throw an exception here.
+                throw new Exception("There is no consistent jQuery UI path on //$cdnHost. Please consider another CDN or disable jQuery UI");
+            default:
+                throw new Exception("Unknown jQuery CDN: //$cdnHost");
+            }
 
+            // Compose the URL based on the application environment
             $url = APPLICATION_ENV == 'production'
-                ? self::$options['cdnHost'] . $path . '/' . $basename . '.min.js'
-                : self::$options['cdnHost'] . $path . '/' . $basename . '.js';
+                ? $path . '/' . $basename . '.min.js'
+                : $path . '/' . $basename . '.js';
 
             // Add file to view
             $view->headScript()->appendFile($url);
 
             // Set path and compose URL for the theme CSS
+            // Works for all CDNs except CloudFlare
             $path .= '/themes/' . self::$options['uiTheme'];
-            $url = self::$options['cdnHost'] . $path . '/' . $basename . '.css';
+            $url = $path . '/' . $basename . '.css';
             $view->headLink()->appendStylesheet($url);
         }
     }
