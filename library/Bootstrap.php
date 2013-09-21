@@ -6,13 +6,13 @@
 
 public function _initZFE()
 {
-    ZFE_Bootstrap::init();
+    ZFE_Bootstrap::run();
 }
 
  **/
 class ZFE_Bootstrap
 {
-    public static function init()
+    public static function run()
     {
         // Register the ZFE controller plugins as helpers
         Zend_Controller_Action_HelperBroker::addPath(
