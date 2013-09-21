@@ -10,7 +10,6 @@ class ZFE_Controller_Helper_Bootstrap extends Zend_Controller_Action_Helper_Abst
     public function direct($responsive = true, $options = array())
     {
         // Set default options as to where the CSS and JS directories are
-        // and use responsive CSS
         if (is_null($this->_options)) {
             $this->_options = array(
                 'css' => '/css', 
