@@ -16,7 +16,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         parent::__construct();
 
-        static::getDatabase();
+        self::getDatabase();
     }
 
     /**
@@ -28,7 +28,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
         }
 
-        return static::getDatabase()->{static::$collection};
+        return self::getDatabase()->{static::$collection};
     }
 
     /**
@@ -37,13 +37,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      *
      * Because the constructor calls this function, nothing needs to be done in the
      * application's bootstrap. Just create a Mongo document object :)
-     *
-     * TODO See if we need static::$db or self::$db, since we only need one $db for all
-     * Mongo objects.
      */
     final public static function getDatabase()
     {
-        if (null === static::$db) {
+        if (null === self::$db) {
             $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
             if (null === ($resource = $bootstrap->getPluginResource('Mongo'))) {
                 $bootstrap->registerPluginResource('Mongo');
@@ -51,10 +48,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 $resource->init();
             }
 
-            static::$db = $resource->getDatabase();
+            self::$db = $resource->getDatabase();
         }
 
-        return static::$db;
+        return self::$db;
     }
 
     /**
@@ -75,7 +72,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         $ret = call_user_func_array(array(self::getCollection(), $name), $args);
 
-        if ('MongoCursor' === get_class($ret)) $ret = self::_mapCollection($ret);
+        // Do some conversion if needed
+        switch($name) {
+        case 'find':
+            $ret = array_map(array(__CLASS__, '_map'), iterator_to_array($ret));
+            break;
+        case 'findOne':
+            $ret = self::_map($ret);
+            break;
+        }
 
         return $ret;
     }
@@ -90,20 +95,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
-     * Maps results from the Mongo cursor into object instances,
-     * puts them in an array and returns this one
+     * Maps data from the MongoDB database into an object instance
      */
-    private static function _mapCollection(MongoCursor $cursor)
+    private static function _map(array $data)
     {
-        $ret = array();
-
-        $cursor->reset();
-        foreach($cursor as $item) {
-            $entry = new static();
-            $entry->init($item);
-            $ret[] = $entry;
-        }
-
-        return $ret;
+        $obj = new static();
+        $obj->init($data);
+        return $obj;
     }
 }
