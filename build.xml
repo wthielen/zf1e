@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ZF1E" default="archive">
+    <!-- Default properties -->
+    <property name="archive.name" value="${phing.project.name}.tar.gz" />
+    <property name="archive.tag" value="master" />
+
+    <!-- Override defaults with values from build.properties -->
+    <property file="build.properties" override="true" />
+
+    <!-- Archive task to execute git archive and create a .tar.gz -->
+    <target name="archive">
+        <echo msg="Creating archive..." />
+        <exec command="git archive ${archive.tag} -o ${archive.name}" />
+        <echo msg="Archive ${archive.name} created" />
+    </target>
+
+    <!-- Test preparation -->
+    <target name="prepare-test">
+        <echo msg="Creating directories..." />
+        <delete dir="${dir.reports}" />
+        <mkdir dir="${dir.reports}/results" />
+        <mkdir dir="${dir.reports}/coverage" />
+    </target>
+
+    <!-- Run unit tests and generate reports -->
+    <target name="test" depends="prepare-test">
+        <!-- This adhoc piece of code is required to enable the
+             Zend Framework autoloader -->
+        <adhoc><![CDATA[
+            $test_dir = $this->project->getProperty('dir.tests');
+
+            set_include_path(implode(PATH_SEPARATOR, array(
+                $test_dir . '/library',
+                get_include_path(),
+            )));
+            require_once 'Zend/Loader/Autoloader.php';
+            $autoloader = Zend_Loader_Autoloader::getInstance();
+        ]]></adhoc>
+
+        <coverage-setup database="reports/coverage.db">
+            <fileset dir="${dir.library}">
+                <include name="**/*.php" />
+            </fileset>
+        </coverage-setup>
+
+        <echo msg="Running test suites..." />
+        <phpunit codecoverage="true" bootstrap="${dir.tests}/bootstrap.php">
+            <formatter todir="${dir.reports}" type="xml" />
+            <batchtest>
+                <fileset dir="${dir.tests}">
+                    <include name="**/*Test.php" />
+                </fileset>
+            </batchtest>
+        </phpunit>
+
+        <echo msg="Generating PHPUnit report..." />
+        <phpunitreport infile="${dir.reports}/testsuites.xml" format="frames" todir="${dir.reports}/results" />
+
+        <coverage-report outfile="${dir.reports}/coverage.xml">
+            <report todir="${dir.reports}/coverage" title="${name}" />
+        </coverage-report>
+
+        <echo msg="Cleaning up..." />
+        <delete file="${dir.reports}/coverage.xml" />
+        <delete file="${dir.reports}/coverage.db" />
+        <delete file="${dir.reports}/testsuites.xml" />
+    </target>
+</project>
