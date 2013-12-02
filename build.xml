@@ -37,7 +37,7 @@
             $autoloader = Zend_Loader_Autoloader::getInstance();
         ]]></adhoc>
 
-        <coverage-setup database="reports/coverage.db">
+        <coverage-setup database="${dir.reports}/coverage.db">
             <fileset dir="${dir.library}">
                 <include name="**/*.php" />
             </fileset>

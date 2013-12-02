@@ -30,7 +30,6 @@ abstract class ZFE_Util_String
     public static function chop($str, $n, $ellipsis = '...')
     {
         $str = self::trim($str);
-        var_dump(mb_strlen($str));
         if (mb_strlen($str) > $n) {
             $str = mb_substr($str, 0, $n - mb_strlen($ellipsis)) . $ellipsis;
         }

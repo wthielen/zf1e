@@ -11,3 +11,7 @@ set_include_path(implode(PATH_SEPARATOR, array(
 require_once 'Zend/Loader/Autoloader.php';
 $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->registerNamespace('ZFE_');
+
+// Set mb encoding
+mb_internal_encoding('UTF-8');
+mb_regex_encoding('UTF-8');
