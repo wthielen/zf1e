@@ -31,7 +31,13 @@ abstract class ZFE_Util_String
     {
         $str = self::trim($str);
         if (mb_strlen($str) > $n) {
-            $str = mb_substr($str, 0, $n - mb_strlen($ellipsis)) . $ellipsis;
+            $str = self::trim(mb_substr($str, 0, $n));
+
+            // If the exact chop does not end in a sentence-ending punctuation character
+            // chop off some more to fit in the ellipsis
+            if (mb_strpos('.!?。？！', mb_substr($str, mb_strlen($str) - 1)) === false) {
+                $str = self::trim(mb_substr($str, 0, $n - mb_strlen($ellipsis))) . $ellipsis;
+            }
         }
 
         return $str;
@@ -52,10 +58,17 @@ abstract class ZFE_Util_String
     public static function chopWords($str, $n, $ellipsis = '...')
     {
         $str = self::trim($str);
+        if (mb_strlen($str) <= $n) return $str;
+
         $words = explode(' ', $str);
 
         $ret = '';
-        while (mb_strlen($ret . ($word = array_shift($words)) . $ellipsis) <= $n) {
+        while (mb_strlen($ret . ($word = array_shift($words))) <= $n) {
+            // If the next token does not end in a sentence-ending punctuation character
+            // test the length including ellipsis
+            if (mb_strpos('.!?。？！', mb_substr($word, mb_strlen($word) - 1)) === false) {
+                if (mb_strlen($ret . $word . $ellipsis) > $n) break;
+            }
             $ret .= $word . ' ';
         }
         $ret = trim($ret);
