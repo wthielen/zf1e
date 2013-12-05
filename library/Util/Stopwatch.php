@@ -60,9 +60,26 @@ final class ZFE_Util_Stopwatch
     }
 
     /**
+     * get
+     *
+     * Gets certain timings. Useful for unit testing.
+     *
+     * @param string $identifier
+     * @return Array
+     */
+    public static function get($identifier)
+    {
+        if (isset(self::$timings[$identifier]))
+            return self::$timings[$identifier];
+
+        return null;
+    }
+
+    /**
      * dump
      *
      * Dumps the results on screen
+     * @codeCoverageIgnore
      */
     public static function dump()
     {
