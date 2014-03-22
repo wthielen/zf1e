@@ -5,29 +5,32 @@
  */
 class ZFE_Controller_Helper_Bootstrap extends Zend_Controller_Action_Helper_Abstract
 {
+    private $_defaultOptions = array(
+        'minified' => true,
+        'css' => '/css',
+        'js' => '/js'
+    );
+
     private $_options;
 
-    public function direct($responsive = true, $options = array())
+    public function direct($options = array())
     {
         // Set default options as to where the CSS and JS directories are
         if (is_null($this->_options)) {
-            $this->_options = array(
-                'css' => '/css', 
-                'js' => '/js'
-            );
+            $this->_options = $this->_defaultOptions;
         }
 
         // Merge passed options with default options
-        $this->_options = array_merge($this->_options, $options);
+        $this->_options = array_merge($this->_defaultOptions, $options);
 
-        // Determine basename of the file based on responsive flag
-        $basename = $responsive ? 'bootstrap-responsive' : 'bootstrap';
+        // Store basename here
+        $basename = 'bootstrap';
 
         $css = $basename . '.css';
         $js = $basename . '.js';
 
         // Check if minified versions exist for production environment
-        if (APPLICATION_ENV == 'production') {
+        if ($this->_options['minified']) {
             $cssPath = $_SERVER['DOCUMENT_ROOT'] . $this->_options['css'];
             if (Zend_Loader::isReadable($cssPath . '/' . $basename . '.min.css')) {
                 $css = $basename . '.min.css';

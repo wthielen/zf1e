@@ -3,51 +3,24 @@
 class ZFE_Controller_Base extends Zend_Controller_Action
 {
     /**
-     * Constructor
+     * Initializer
      *
-     * After calling the parent constructor, this constructor
+     * This function will be called by the constructor. It
      * will take care of the default resource files (CSS and
      * JavaScript) to be included, using the default view
      * helpers.
      *
-     * @param Zend_Controller_Request_Abstract $request
-     * @param Zend_Controller_Response_Abstract $response
-     * @param array $invokeArgs
      * @return void
      */
-    public function __construct(
-        Zend_Controller_Request_Abstract $request,
-        Zend_Controller_Response_Abstract $response,
-        array $invokeArgs = array()
-    )
+    public function init()
     {
-        parent::__construct($request, $response, $invokeArgs);
-
         // Initialize view
-        if (!isset($this->view)) {
-            $this->initView();
-        }
-
-        // Get controller and action names
-        $controller = $this->getRequest()->getControllerName();
-        $action = $this->getRequest()->getActionName();
+        $view = $this->initView();
 
         // Add the library's view helper path
         $libraryPath = realpath(dirname(__FILE__) . '/..');
-        $this->view->addHelperPath($libraryPath . '/View/Helper', 'ZFE_View_Helper');
-
-        // Automatically add CSS and JS
-        $headLink = $this->view->headLink();
-        $headLink->appendStylesheet('/css/default.css');
-        $headLink->appendStylesheet('/css/' . $controller . '.css');
-        $headLink->appendStylesheet('/css/' . $controller . '/' . $action . '.css');
-
-        $headScript = $this->view->headScript();
-        $headScript->appendFile('/js/default.js');
-        $headScript->appendFile('/js/' . $controller . '.js');
-        $headScript->appendFile('/js/' . $controller . '/' . $action . '.js');
+        $view->addHelperPath($libraryPath . '/View/Helper', 'ZFE_View_Helper');
     }
-
 
     /**
      * Pre-dispatch routine
@@ -60,8 +33,22 @@ class ZFE_Controller_Base extends Zend_Controller_Action
      */
     public function preDispatch()
     {
+        // Get controller and action names
+        $controller = $this->getRequest()->getControllerName();
         $action = $this->getRequest()->getActionName();
 
+        // Automatically add CSS and JS
+        $headLink = $this->view->headLink();
+        $headLink->appendStylesheet('/css/default.css');
+        $headLink->appendStylesheet('/css/' . $controller . '.css');
+        $headLink->appendStylesheet('/css/' . $controller . '/' . $action . '.css');
+
+        $headScript = $this->view->headScript();
+        $headScript->appendFile('/js/default.js');
+        $headScript->appendFile('/js/' . $controller . '.js');
+        $headScript->appendFile('/js/' . $controller . '/' . $action . '.js');
+
+        // Call the action's pre-function
         $func = 'pre' . ucfirst(strtolower($action)) . 'Action';
         if (method_exists($this, $func)) $this->$func();
     }
