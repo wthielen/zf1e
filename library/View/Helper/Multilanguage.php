@@ -6,30 +6,64 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     const TYPE_LIST = 'list';
 
     private $resource;
+    private $type;
 
     /**
      * The Multi-language view helper
+     */
+    public function multilanguage($type = self::TYPE_SELECT)
+    {
+        $this->type = $type;
+
+        $front = Zend_Controller_Front::getInstance();
+        $bootstrap = $front->getParam('bootstrap');
+        $this->resource = $bootstrap->getPluginResource('Multilanguage');
+
+        return $this;
+    }
+
+    /**
+     * Convenience function to get the configured languages
      *
+     * @return array
+     */
+    public function getLanguages()
+    {
+        if (null === $this->resource) return array();
+
+        return $this->resource->getLanguages();
+    }
+
+    /**
+     * Convenience function to get the current language
+     *
+     * @return string
+     */
+    public function getLanguage()
+    {
+        if (null === $this->resource) {
+            $locale = new Zend_Locale();
+            return $locale->getLanguage();
+        }
+
+        return $this->resource->getLanguage();
+    }
+
+    /**
      * Returns HTML for the view control to select a language from
      * the supported languages.
      *
      * If the Multi-language resource plugin is not used, it will
      * return an empty string.
+     *
+     * If the given type is unknown, it will return the select list
      */
-    public function multilanguage($type = self::TYPE_SELECT)
+    public function __toString()
     {
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
-        $this->resource = $bootstrap->getPluginResource('Multilanguage');
+        if (null === $this->resource) return '';
 
-        if (null === $this->resource) return "";
-
-        $fn = '_' . strtolower($type);
-        if (!method_exists($this, $fn)) {
-            throw new Exception("Requested type $type not available in " . get_class($this));
-        }
-
-        return $this->$fn();
+        $fn = '_type' . ucfirst(strtolower($this->type));
+        return method_exists($this, $fn) ? $this->$fn() : $this->_typeSelect();
     }
 
     /**
@@ -39,7 +73,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      * handler for this select, which should go to the URL given in the
      * data-url attribute.
      */
-    private function _select()
+    private function _typeSelect()
     {
         $languages = $this->resource->getLanguages();
         $language = $this->resource->getLanguage();
@@ -63,7 +97,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      * The list elements contain a link which will go to the corresponding
      * URL for this language, so no JavaScript implementation is needed.
      */
-    private function _list()
+    private function _typeList()
     {
         $languages = $this->resource->getLanguages();
         $language = $this->resource->getLanguage();

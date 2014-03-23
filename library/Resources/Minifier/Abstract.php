@@ -8,10 +8,12 @@
 class ZFE_Resources_Minifier_Abstract
 {
     protected $_cacheDir;
+    protected $_minify = true;
 
     public function __construct($options) 
     {
         if (isset($options['cache_dir'])) $this->_cacheDir = $options['cache_dir'];
+        if (isset($options['minify'])) $this->_minify = $options['minify'] ? true : false;
     }
 
     public function getCacheDir()

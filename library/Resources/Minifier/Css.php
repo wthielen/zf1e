@@ -8,6 +8,8 @@ class ZFE_Resources_Minifier_Css extends ZFE_Resources_Minifier_Abstract
 {
     public function minify($content)
     {
+        if (!$this->_minify) return $content;
+
         $content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $content);
         $content = str_replace(': ', ':', $content);
         $content = str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $content);
