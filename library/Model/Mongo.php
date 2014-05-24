@@ -75,7 +75,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Do some conversion if needed
         switch($name) {
         case 'find':
-            $ret = array_map(array(__CLASS__, '_map'), iterator_to_array($ret));
+            $ret = array_map(array(get_called_class(), '_map'), iterator_to_array($ret));
             break;
         case 'findOne':
             $ret = self::_map($ret);
