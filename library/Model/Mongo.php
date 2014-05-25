@@ -27,13 +27,18 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
-     * If the passed value is a MongoDB entity, convert it into
-     * its reference
+     * Do some conversions for some types
      */
     public function __set($key, $val)
     {
+        // If it is a Mongo entity, convert it to its reference
         if ($val instanceof ZFE_Model_Mongo) {
             $val = $val->getReference();
+        }
+
+        // If it is a DateTime, convert it to MongoDate
+        if ($val instanceof DateTime) {
+            $val = new MongoDate($val->getTimestamp());
         }
 
         parent::__set($key, $val);
@@ -48,6 +53,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * reference collection, but if it is mentioned in the mapping configuration,
      * it will use the mapping's setting instead. If the class does not exist,
      * an explanatory exception will be thrown.
+     *
+     * Other conversions: MongoDate to DateTime
      */
     public function __get($key)
     {
@@ -68,6 +75,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = new $cls();
             $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
 
+            return $val;
+        }
+
+        if ($this->_data[$key] instanceof MongoDate) {
+            $val = new DateTime('@' . $this->_data[$key]->sec);
+            $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
             return $val;
         }
 
@@ -131,13 +144,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $ret = call_user_func_array(array(self::getCollection(), $name), $args);
 
         // Do some conversion if needed
-        switch($name) {
-        case 'find':
-            $ret = array_map(array(get_called_class(), '_map'), iterator_to_array($ret));
-            break;
-        case 'findOne':
-            $ret = self::_map($ret);
-            break;
+        if ($ret) {
+            switch($name) {
+            case 'find':
+                $ret = array_map(array(get_called_class(), '_map'), iterator_to_array($ret));
+                break;
+            case 'findOne':
+                $ret = self::_map($ret);
+                break;
+            }
         }
 
         return $ret;
