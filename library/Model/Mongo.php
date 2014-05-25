@@ -9,6 +9,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     protected static $collection;
 
     /**
+     * An array for mapping collection names to PHP class names
+     * This can be configured in the application's configuration file
+     * for not-so-obvious mappings.
+     */
+    protected static $mapping;
+
+    /**
      * Mongo constructor, that calls the getDatabase() function, which in
      * turn initializes the Mongo application plugin resource.
      */
@@ -17,6 +24,54 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         parent::__construct();
 
         self::getDatabase();
+    }
+
+    /**
+     * If the passed value is a MongoDB entity, convert it into
+     * its reference
+     */
+    public function __set($key, $val)
+    {
+        if ($val instanceof ZFE_Model_Mongo) {
+            $val = $val->getReference();
+        }
+
+        parent::__set($key, $val);
+    }
+
+    /**
+     * If the accessed data entry is a MongoDB reference, fetch the
+     * reference data and turn it into an object of the reference data
+     * class.
+     *
+     * By default, it will create an object with the class name based on the
+     * reference collection, but if it is mentioned in the mapping configuration,
+     * it will use the mapping's setting instead. If the class does not exist,
+     * an explanatory exception will be thrown.
+     */
+    public function __get($key)
+    {
+        if (MongoDBRef::isRef($this->_data[$key])) {
+            $ref = $this->_data[$key]['$ref'];
+            $ref = isset(self::$mapping[$ref]) ? self::$mapping[$ref] : ucfirst($ref);
+
+            $prefix = ZFE_Environment::getResourcePrefix('model');
+
+            $cls = $prefix . '_' . $ref;
+            if (!class_exists($cls)) {
+                throw new ZFE_Model_Mongo_Exception(
+                    "There is no model for the referred entity '" . $this->_data[$key]['$ref'] . "'.
+                    Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
+                );
+            }
+
+            $val = new $cls();
+            $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+
+            return $val;
+        }
+
+        return parent::__get($key);
     }
 
     /**
@@ -49,6 +104,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
 
             self::$db = $resource->getDatabase();
+
+            $options = $resource->getOptions();
+            self::$mapping = isset($options['mapping']) ? $options['mapping'] : array();
         }
 
         return self::$db;
@@ -92,6 +150,21 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         $collection = self::getCollection();
         $collection->save($this->_data);
+    }
+
+    /**
+     * Creates a reference of this instance to be used in another instance
+     *
+     * If there is no _id entry in this instance, we save this instance into
+     * MongoDB so that we get an _id identifier.
+     */
+    public function getReference()
+    {
+        if (!isset($this->_data['_id'])) {
+            $this->save();
+        }
+
+        return MongoDBRef::create(static::$collection, $this->_data['_id']);
     }
 
     /**
