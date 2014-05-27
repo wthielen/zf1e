@@ -132,7 +132,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         $whitelist = array(
             'count',
-            'find',
             'findOne',
             'remove'
         );
@@ -146,13 +145,67 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Do some conversion if needed
         if ($ret) {
             switch($name) {
-            case 'find':
-                $ret = array_map(array(get_called_class(), '_map'), iterator_to_array($ret));
-                break;
             case 'findOne':
                 $ret = self::_map($ret);
                 break;
             }
+        }
+
+        return $ret;
+    }
+
+    /**
+     * To be able to paginate results, I have taken out the 'find' call and made it
+     * its own function. It returns an array containing the result set, and the
+     * total number of results, useful for pagination
+     */
+    public static function find($args = array())
+    {
+        $default = array('query' => array(), 'fields' => array());
+        $args = array_merge($default, $args);
+
+        $cursor = self::getCollection()->find($args['query'], $args['fields']);
+        $count = $cursor->count();
+
+        if (isset($args['sort']) && is_array($args['sort'])) {
+            // Convert 'asc' and 'desc' to 1 and -1
+            foreach($args['sort'] as &$val) {
+                $val = strtolower($val);
+                if ($val == 'asc') {
+                    $val = 1;
+                } else if ($val == 'desc') {
+                    $val = -1;
+                } else {
+                    $val = gmp_sign($val);
+                }
+            }
+            $cursor->sort($args['sort']);
+        }
+
+        // Apply pagination
+        if (isset($args['offset']) && is_scalar($args['offset'])) $cursor->skip($args['offset']);
+        if (isset($args['limit']) && is_scalar($args['limit'])) $cursor->limit($args['limit']);
+
+        return array(
+            'result' => array_map(array(get_called_class(), '_map'), iterator_to_array($cursor)),
+            'total' => $count
+        );
+    }
+
+    /**
+     * A wrapper function to fetch records, using a paginator to determine
+     * the offset and limit. It will re-page and re-fetch if the currently
+     * set page number is out of bounds.
+     */
+    public static function findPaginated($paginator, $args = array())
+    {
+        $args['offset'] = $paginator->getOffset();
+        $args['limit'] = $paginator->getItems();
+
+        $ret = static::find($args);
+        if ($paginator->setTotal($ret['total'])) {
+            $args['offset'] = $paginator->getOffset();
+            $ret = static::find($args);
         }
 
         return $ret;
