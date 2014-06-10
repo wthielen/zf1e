@@ -18,8 +18,11 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
         parent::__construct();
 
         $front = Zend_Controller_Front::getInstance();
-        $resource = $front->getParam('bootstrap')->getPluginResource('minifier');
-        if ($resource) $this->_minifier = $resource->css;
+        $bootstrap = $front->getParam('bootstrap');
+        if ($bootstrap) {
+            $resource = $bootstrap->getPluginResource('minifier');
+            if ($resource) $this->_minifier = $resource->css;
+        }
     }
 
     public function toString($indent = null)
