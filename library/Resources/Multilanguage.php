@@ -3,6 +3,12 @@
 class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstract
 {
     private $language;
+    private $translate;
+
+    private static $_adapterExt = array(
+        'gettext' => '.mo',
+        'csv' => '.csv'
+    );
 
     /**
      * Resource initializer
@@ -38,8 +44,44 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $bootstrap->bootstrap('frontController');
         $front = $bootstrap->getResource('frontController');
         $front->registerPlugin(new ZFE_Plugin_Multilanguage());
+
+        Zend_Registry::set('ZFE_MultiLanguage', $this);
     }
 
+    /**
+     * Zend_Translate initializer
+     */
+    public function initTranslate()
+    {
+        $options = $this->getOptions();
+
+        if (isset($options['adapter'])) {
+            if (!isset($options['contentPath'])) {
+                throw new Zend_Application_Resource_Exception('Please specify the content path where your translation sources are: resources.multilanguage.contentPath');
+            }
+
+            $adapter = $options['adapter'];
+            if (!isset(self::$_adapterExt[$adapter])) {
+                throw new Zend_Application_Resource_Exception('Unknown adapter for translation: ' . $adapter);
+            }
+
+            $path = $options['contentPath'];
+            $config = array(
+                'adapter' => $adapter,
+                'content' => $path . DIRECTORY_SEPARATOR . $this->getLanguage() . self::$_adapterExt[$adapter]
+            );
+
+            if (!file_exists($config['content'])) {
+                $config['content'] = $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter];
+            }
+
+            $this->translate = new Zend_Translate($config);
+        }
+    }
+
+    /**
+     * Sets the language
+     */
     public function setLanguage($language)
     {
         $this->language = $language;
@@ -83,4 +125,13 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         return @is_array($options['languages']) ? $options['languages'][0] : null;
     }
 
+    public function _($messageId)
+    {
+        if (null === $this->translate) {
+            echo $messageId;
+            return;
+        }
+
+        echo $this->translate->translate($messageId);
+    }
 }

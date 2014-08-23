@@ -25,6 +25,14 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     }
 
     /**
+     * To be able to call functions on the multilanguage helper itself
+     */
+    public function direct()
+    {
+        return $this;
+    }
+
+    /**
      * Convenience function to get the configured languages
      *
      * @return array
@@ -49,6 +57,16 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         }
 
         return $this->resource->getLanguage();
+    }
+
+    /**
+     * Gets the MultiLanguage resource
+     *
+     * @return object
+     */
+    public function getResource()
+    {
+        return $this->resource;
     }
 
     /**

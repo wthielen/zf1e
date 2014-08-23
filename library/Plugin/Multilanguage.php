@@ -58,6 +58,7 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
 
         // Store the language in the resource
         $this->resource->setLanguage($language);
+        $this->resource->initTranslate();
     }
 
     /**
