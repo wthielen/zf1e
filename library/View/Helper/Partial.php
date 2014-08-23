@@ -9,6 +9,9 @@
  * name to see if translated versions of the partial exist. If it does not find a partial for the
  * current language, it falls back on the default language. If it still fails to find one for the
  * default language, it restores the partial's name to what was passed in the argument.
+ *
+ * If the given file name of the partial is for example partial.phtml, then it will try to find and
+ * use partial-<lang>.phtml.
  **/
 class ZFE_View_Helper_Partial extends Zend_View_Helper_Partial
 {
