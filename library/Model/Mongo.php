@@ -58,6 +58,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function __get($key)
     {
+        if (!isset($this->_data[$key])) return null;
+
         if (MongoDBRef::isRef($this->_data[$key])) {
             $ref = $this->_data[$key]['$ref'];
             $ref = isset(self::$mapping[$ref]) ? self::$mapping[$ref] : ucfirst($ref);
