@@ -6,6 +6,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     const TYPE_LIST = 'list';
 
     private $resource;
+    private $plugin;
     private $type;
 
     /**
@@ -18,6 +19,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         $front = Zend_Controller_Front::getInstance();
         $bootstrap = $front->getParam('bootstrap');
         $this->resource = $bootstrap->getPluginResource('Multilanguage');
+        $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
 
         return $this;
     }
@@ -82,7 +84,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         foreach($languages as $key => $lang) 
         {
             $selected = $key == $language ? 'selected="selected"' : '';
-            $url = htmlspecialchars($this->resource->composeUrl($key));
+            $url = htmlspecialchars($this->plugin->composeUrl($key));
             $html .= "<option value=\"$key\" data-url=\"$url\" $selected>$lang</option>";
         }
         $html .= '</select>';
@@ -106,7 +108,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         foreach($languages as $key => $lang) 
         {
             $class = $key == $language ? 'zfe_selected' : '';
-            $url = htmlspecialchars($this->resource->composeUrl($key));
+            $url = htmlspecialchars($this->plugin->composeUrl($key));
             $html .= "<li class=\"$class\"><a href=\"$url\">$lang</a></li>";
         }
         $html .= '</ul>';
