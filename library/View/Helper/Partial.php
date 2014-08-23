@@ -32,14 +32,14 @@ class ZFE_View_Helper_Partial extends Zend_View_Helper_Partial
             $default = $resource->getDefault();
 
             $ext = pathinfo($origname, PATHINFO_EXTENSION);
-            $name = substr_replace($origname, "-" . $lang, strpos($origname, $ext) - 1, 0);
+            $name = substr_replace($origname, "-" . $lang, strrpos($origname, $ext) - 1, 0);
 
             $exists = array_reduce($paths, function($ret, $path) use($name) {
                 return $ret || file_exists($path . $name);
             }, false);
 
             if (!$exists && $lang !== $default) {
-                $name = substr_replace($origname, "-" . $default, strpos($origname, $ext) - 1, 0);
+                $name = substr_replace($origname, "-" . $default, strrpos($origname, $ext) - 1, 0);
                 $exists = array_reduce($paths, function($ret, $path) use($name) {
                     return $ret || file_exists($path . $name);
                 }, false);
