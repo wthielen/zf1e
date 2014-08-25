@@ -125,13 +125,82 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         return @is_array($options['languages']) ? $options['languages'][0] : null;
     }
 
+    /**
+     * The default translate function
+     *
+     * It supports variable arguments, so that if the text contains sprintf placeholders,
+     * they will be replaced by the arguments passed.
+     */
     public function _($messageId)
     {
         if (null === $this->translate) {
-            echo $messageId;
-            return;
+            return $messageId;
         }
 
-        echo $this->translate->translate($messageId);
+        $txt = $this->translate->translate($messageId);
+
+        $args = func_get_args();
+        if (count($args) == 1) return $txt;
+
+        array_shift($args);
+        return vsprintf($txt, $args);
+    }
+
+    /**
+     * The translate function for plurals
+     *
+     * May add variable argument support, but then it would be unclear which argument
+     * would decide the outcome. It could be set to take the first argument for that...
+     */
+    public function _n($messageId, $pluralId, $n)
+    {
+        if (null === $this->translate) {
+            return $messageId;
+        }
+
+        $txt = $this->translate->translate(array(
+            $messageId, $pluralId, $n
+        ));
+
+        return sprintf($txt, $n);
+    }
+
+    /**
+     * Context translation
+     *
+     * This supports variable arguments to be put in the placeholders of the translated
+     * text.
+     */
+    public function _x($messageId, $ctxt)
+    {
+        if (null === $this->translate) {
+            return $messageId;
+        }
+
+        $txt = $this->translate->translate($ctxt . chr(4) . $messageId);
+
+        $args = func_get_args();
+        if (count($args) == 2) return $txt;
+
+        array_shift($args);
+        return vsprintf($txt, $args);
+    }
+
+    /**
+     * Plural translation with context
+     */
+    public function _nx($messageId, $pluralId, $n, $ctxt)
+    {
+        if (null === $this->translate) {
+            return $messageId;
+        }
+
+        $txt = $this->translate->translate(array(
+            $ctxt . chr(4) . $messageId,
+            $ctxt . chr(4) . $pluralId,
+            $n
+        ));
+
+        return sprintf($txt, $n);
     }
 }
