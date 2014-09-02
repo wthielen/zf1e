@@ -116,6 +116,6 @@ class ZFE_Model_Base
 
         if (!in_array($key, static::$translations)) return $this->$key;
 
-        return isset($this->_data[$key][$lang] ? $this->_data[$key][$lang] : null;
+        return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
     }
 }
