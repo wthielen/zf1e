@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * A basic model class
+ *
+ * It knows about translated data members. This is probably best done in
+ * a class of its own, but since PHP does not support multiple inheritance
+ * until 5.4 (using traits), we keep it here. When 5.4 becomes more
+ * mainstream, split the translation capabilities into a separate trait.
+ */
 class ZFE_Model_Base
 {
     protected $_data;
@@ -116,6 +124,6 @@ class ZFE_Model_Base
 
         if (!in_array($key, static::$translations)) return $this->$key;
 
-        return isset($this->_data[$key][$lang] ? $this->_data[$key][$lang] : null;
+        return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
     }
 }
