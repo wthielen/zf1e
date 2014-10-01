@@ -166,6 +166,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $default = array('query' => array(), 'fields' => array());
         $args = array_merge($default, $args);
 
+        // Replace ZFE_Model_Mongo instances by their references
+        array_walk($args['query'], function(&$val) {
+            $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
+        });
+
         $cursor = self::getCollection()->find($args['query'], $args['fields']);
         $count = $cursor->count();
 
@@ -185,8 +190,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         // Apply pagination
-        if (isset($args['offset']) && is_scalar($args['offset'])) $cursor->skip($args['offset']);
-        if (isset($args['limit']) && is_scalar($args['limit'])) $cursor->limit($args['limit']);
+        if (isset($args['offset']) && isset($args['limit'])) {
+            $offset = intval($args['offset']);
+            $limit = intval($args['limit']);
+
+            if ($offset > 0) $cursor->skip($offset);
+            if ($limit > 0) $cursor->limit($limit);
+        }
 
         return array(
             'result' => array_map(array(get_called_class(), '_map'), iterator_to_array($cursor)),
