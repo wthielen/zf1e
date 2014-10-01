@@ -9,6 +9,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     protected static $collection;
 
     /**
+     * A cache for lazily loaded reference objects
+     */
+    private $_cache;
+
+    /**
      * An array for mapping collection names to PHP class names
      * This can be configured in the application's configuration file
      * for not-so-obvious mappings.
@@ -22,6 +27,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     public function __construct()
     {
         parent::__construct();
+
+        $this->_cache = array();
 
         self::getDatabase();
     }
@@ -39,6 +46,17 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // If it is a DateTime, convert it to MongoDate
         if ($val instanceof DateTime) {
             $val = new MongoDate($val->getTimestamp());
+        }
+
+        // If it is an array of Mongo entities or DateTimes
+        if (is_array($val)) {
+            $_val = array();
+            foreach($val as $i => $v) {
+                if ($v instanceof ZFE_Model_Mongo) $v = $v->getReference();
+                if ($v instanceof DateTime) $v = new MongoDate($v->getTimestamp());
+                $_val[$i] = $v;
+            }
+            $val = $_val;
         }
 
         parent::__set($key, $val);
@@ -61,12 +79,16 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if (!isset($this->_data[$key])) return null;
 
         if (MongoDBRef::isRef($this->_data[$key])) {
+            if (isset($this->_cache[$key])) return $this->_cache[$key];
+
             $ref = $this->_data[$key]['$ref'];
-            $ref = isset(self::$mapping[$ref]) ? self::$mapping[$ref] : ucfirst($ref);
 
-            $prefix = ZFE_Environment::getResourcePrefix('model');
+            // TODO app prefix? model prefix?
+            $cls = 'Model_' . ucfirst($ref);
+            if (isset(self::$mapping[$ref])) {
+                $cls = self::$mapping[$ref];
+            }
 
-            $cls = $prefix . '_' . $ref;
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
                     "There is no model for the referred entity '" . $this->_data[$key]['$ref'] . "'.
@@ -76,6 +98,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
             $val = new $cls();
             $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+
+            $this->_cache[$key] = $val;
 
             return $val;
         }
