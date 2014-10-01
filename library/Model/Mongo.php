@@ -84,11 +84,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $ref = $this->_data[$key]['$ref'];
 
             // TODO app prefix? model prefix?
-            $cls = 'Model_' . ucfirst($ref);
-            if (isset(self::$mapping[$ref])) {
-                $cls = self::$mapping[$ref];
-            }
-
+            $cls = ZFE_Environment::getResourcePrefix('model') . '_' . ucfirst($ref);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
                     "There is no model for the referred entity '" . $this->_data[$key]['$ref'] . "'.
@@ -100,7 +96,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
 
             $this->_cache[$key] = $val;
-
             return $val;
         }
 
