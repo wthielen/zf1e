@@ -83,8 +83,8 @@ class ZFE_Model_Pdo extends ZFE_Model_Base
                 unset($parts[$i]);
             }
 
-            $user = @ZFE_Util_Core::value($parts['user']);
-            $password = @ZFE_Util_Core::value($parts['password']);
+            $user = @ZFE_Core::value($parts['user']);
+            $password = @ZFE_Core::value($parts['password']);
 
             unset($parts['user']);
             unset($parts['password']);

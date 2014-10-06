@@ -48,7 +48,7 @@ class ZFE_Model_Base
         if (is_array($val)) {
             $this->_data[$key] = array_merge($this->_data[$key], $val);
         } else {
-            $lang = ZFE_Util_Core::getLanguage();
+            $lang = ZFE_Core::getLanguage();
             $this->_data[$key][$lang] = $val;
         }
     }
@@ -70,7 +70,7 @@ class ZFE_Model_Base
 
         // The key is a translatable data entry, so we try figuring out
         // the language to use
-        $lang = ZFE_Util_Core::getLanguage();
+        $lang = ZFE_Core::getLanguage();
         if (!isset($this->_data[$key][$lang])) {
             $languages = array_keys($this->_data[$key]);
             $lang = $languages[0];

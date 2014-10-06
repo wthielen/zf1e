@@ -1,10 +1,10 @@
 <?php
 
-class ZFE_Util_CoreTest extends PHPUnit_Framework_TestCase
+class ZFE_CoreTest extends PHPUnit_Framework_TestCase
 {
     public function testValueNull()
     {
-        $this->assertNull(ZFE_Util_Core::value(null));
+        $this->assertNull(ZFE_Core::value(null));
     }
 
     public function testValueDefault()
@@ -16,13 +16,13 @@ class ZFE_Util_CoreTest extends PHPUnit_Framework_TestCase
         );
 
         foreach($values as $val) {
-            $this->assertEquals($val, ZFE_Util_Core::value(null, $val));
+            $this->assertEquals($val, ZFE_Core::value(null, $val));
         }
     }
 
     private function doAssert($val)
     {
-        $this->assertEquals($val, ZFE_Util_Core::value($val));
+        $this->assertEquals($val, ZFE_Core::value($val));
     }
 
     public function testValueInteger()
