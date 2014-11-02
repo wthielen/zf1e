@@ -58,4 +58,24 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
 
         return $this->connection->{$this->database};
     }
+
+    /**
+     * Returns the class name for the given collection name.
+     * If it is mentioned in the mapping configuration, it will use
+     * the mapping's setting for not-so-obvious mappings. This can be
+     * configured in the application's configuration file.
+     */
+    public function getClass($collectionName)
+    {
+        $o = $this->getOptions();
+        $mapping = isset($o['mapping']) ? $o['mapping'] : array();
+
+        if (isset($o['mapping'][$collectionName])) {
+            $cls = $o['mapping'][$collectionName];
+        } else {
+            $cls = ZFE_Environment::getResourcePrefix('model') . '_' . ucfirst($collectionName);
+        }
+
+        return $cls;
+    }
 }

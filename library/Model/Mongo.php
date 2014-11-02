@@ -5,20 +5,25 @@
  */
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
+    protected static $resource;
     protected static $db;
     protected static $collection;
 
     /**
-     * A cache for lazily loaded reference objects
+     * Tells PHP which field to use as the identifier field.
+     * To keep it simple, this mini-ORM does not support compound
+     * primary keys.
+     *
+     * The process cache is to quickly refer to earlier loaded entities
+     * when referring to them with their identifiers.
      */
-    private $_cache;
+    protected static $_identifierField = 'id';
+    protected static $_cache;
 
     /**
-     * An array for mapping collection names to PHP class names
-     * This can be configured in the application's configuration file
-     * for not-so-obvious mappings.
+     * A process cache for lazily loaded reference objects
      */
-    protected static $mapping;
+    private $_refCache;
 
     /**
      * Mongo constructor, that calls the getDatabase() function, which in
@@ -79,15 +84,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if (!isset($this->_data[$key])) return null;
 
         if (MongoDBRef::isRef($this->_data[$key])) {
-            if (isset($this->_cache[$key])) return $this->_cache[$key];
+            if (isset($this->_refCache[$key])) return $this->_refCache[$key];
 
             $ref = $this->_data[$key]['$ref'];
-
-            // TODO app prefix? model prefix?
-            $cls = ZFE_Environment::getResourcePrefix('model') . '_' . ucfirst($ref);
+            $cls = self::$resource->getClass($ref);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
-                    "There is no model for the referred entity '" . $this->_data[$key]['$ref'] . "'.
+                    "There is no model for the referred entity '" . $ref . "'.
                     Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
                 );
             }
@@ -95,7 +98,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = new $cls();
             $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
 
-            $this->_cache[$key] = $val;
+            $this->_refCache[$key] = $val;
             return $val;
         }
 
@@ -122,7 +125,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Registers the MongoDB application plugin resource and initializes it, when a
-     * connection is requested. It stores the database as a static adapter in the model.
+     * connection is requested. It stores the plugin resource and the database adapter
+     * as static entries in the model.
      *
      * Because the constructor calls this function, nothing needs to be done in the
      * application's bootstrap. Just create a Mongo document object :)
@@ -137,10 +141,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 $resource->init();
             }
 
+            self::$resource = $resource;
             self::$db = $resource->getDatabase();
-
-            $options = $resource->getOptions();
-            self::$mapping = isset($options['mapping']) ? $options['mapping'] : array();
         }
 
         return self::$db;
@@ -176,6 +178,56 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
+     * Gets an entry from the database, given the identifier(s)
+     */
+    public static function get($id)
+    {
+        // Multiple parameters case:
+        // Checks if there are any IDs not in the cache, which we need
+        // to load from the database. If there are any, it fetches them using
+        // one find() call, and stores the objects in the process cache.
+        // Then it returns a slice of the cache with the requested IDs.
+        if (is_array($id)) {
+            $toFetch = array_diff($id, array_keys(self::$_cache));
+            if (count($toFetch)) {
+                $fetched = self::find(array('query' => array(
+                    static::$_identifierField => $toFetch
+                )));
+
+                foreach($fetched['result'] as $entry) {
+                    self::$_cache[$entry->getIdentifier()] = $entry;
+                }
+            }
+
+            return array_intersect_key(self::$_cache, array_flip($id));
+        }
+
+        // Single parameter case
+        // Simply fetch it from the database and store it in the cache if
+        // it is not already stored in the cache, and then return from cache.
+        if (!isset(self::$_cache[$id])) {
+            self::$_cache[$id] = self::findOne(array(
+                static::$_identifierField => $id
+            ));
+        }
+
+        return self::$_cache[$id];
+    }
+
+    /**
+     * Returns the identifier of this entry using the
+     * protected $_identifierField field
+     */
+    public function getIdentifier()
+    {
+        if (isset($this->_data[static::$_identifierField])) {
+            return $this->_data[static::$_identifierField];
+        }
+
+        return null;
+    }
+
+    /**
      * To be able to paginate results, I have taken out the 'find' call and made it
      * its own function. It returns an array containing the result set, and the
      * total number of results, useful for pagination
@@ -186,8 +238,18 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $args = array_merge($default, $args);
 
         // Replace ZFE_Model_Mongo instances by their references
-        array_walk($args['query'], function(&$val) {
+        $replaceWithReference = function(&$val) {
             $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
+        };
+
+        array_walk($args['query'], function(&$val) use($replaceWithReference) {
+            // Create a $in operation for multiple arguments to a query field
+            if (is_array($val)) {
+                array_walk($val, $replaceWithReference);
+                $val = array('$in' => $val);
+            } else {
+                $replaceWithReference($val);
+            }
         });
 
         $cursor = self::getCollection()->find($args['query'], $args['fields']);
@@ -217,10 +279,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             if ($limit > 0) $cursor->limit($limit);
         }
 
-        return array(
+        $ret = array(
             'result' => array_map(array(get_called_class(), '_map'), iterator_to_array($cursor)),
             'total' => $count
         );
+
+        return $ret;
     }
 
     /**
@@ -249,6 +313,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         $collection = self::getCollection();
         $collection->save($this->_data);
+
+        // Remove from cache after saving
+        unset(self::$_cache[$this->_data[static::$_identifierField]]);
     }
 
     /**
