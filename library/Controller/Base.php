@@ -69,4 +69,30 @@ class ZFE_Controller_Base extends Zend_Controller_Action
         $func = 'post' . ucfirst(strtolower($action)) . 'Action';
         if (method_exists($this, $func)) $this->$func();
     }
+
+    /**
+     * expectParams
+     *
+     * A variant of getParams, but checks whether the given expected parameters
+     * have been set. If any of the expected parameters are not set, then it
+     * will redirect to the given URL, or throw a request exception.
+     */
+    public function expectParams($expected, $redirect = null)
+    {
+        if (is_scalar($expected)) $expected = array($expected);
+
+        $request = $this->getRequest();
+        $params = $request->getParams();
+        $expected = array_combine($expected, $expected);
+
+        $missing = array_diff_key($expected, $params);
+
+        if (!empty($missing)) {
+            if (is_null($redirect)) throw new Zend_Controller_Request_Exception("The following expected parameters were missing from the request: " . implode(", ", $missing));
+
+            $this->_redirect($redirect);
+        }
+
+        return $params;
+    }
 }
