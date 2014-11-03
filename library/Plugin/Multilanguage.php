@@ -11,7 +11,7 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
     private $resource;
     private $locale;
 
-    public function routeStartup($request)
+    public function routeStartup(Zend_Controller_Request_Abstract $request)
     {
         // Initialize the variables
         $front = Zend_Controller_Front::getInstance();
