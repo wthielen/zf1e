@@ -2,6 +2,8 @@
 
 abstract class ZFE_Core
 {
+    static $browserinfo;
+
     public static function value($val, $default = null)
     {
         return @isset($val) ? $val : $default;
@@ -21,6 +23,14 @@ abstract class ZFE_Core
 
         $locale = new Zend_Locale();
         return $locale->getLanguage();
+    }
+
+    public static function getBrowser() {
+        if (is_null(self::$browserinfo)) {
+            self::$browserinfo = @get_browser();
+        }
+
+        return self::$browserinfo;
     }
 
     /**
