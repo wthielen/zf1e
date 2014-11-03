@@ -108,7 +108,12 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $ret = array();
         if (@is_array($options['languages'])) {
             foreach($options['languages'] as $lang) {
-                $ret[$lang] = Zend_Locale_Data::getContent($lang, 'language', $lang);
+                try {
+                    $str = Zend_Locale_Data::getContent($lang, 'language', $lang);
+                    $first = mb_strtoupper(mb_substr($str, 0, 1));
+                    $ret[$lang] = $first . mb_substr($str, 1);
+                } catch (Exception $e) {
+                }
             }
         }
 

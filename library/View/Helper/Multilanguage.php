@@ -5,9 +5,17 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     const TYPE_SELECT = 'select';
     const TYPE_LIST = 'list';
 
-    private $resource;
-    private $plugin;
-    private $type;
+    protected $resource;
+    protected $plugin;
+    protected $type;
+
+    public function init()
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $bootstrap = $front->getParam('bootstrap');
+        $this->resource = $bootstrap->getPluginResource('Multilanguage');
+        $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
+    }
 
     /**
      * The Multi-language view helper
@@ -16,12 +24,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     {
         $this->type = $type;
 
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
-        $this->resource = $bootstrap->getPluginResource('Multilanguage');
-        $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
-
-        return $this;
+        return $this->direct();
     }
 
     /**
@@ -29,6 +32,8 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      */
     public function direct()
     {
+        $this->init();
+
         return $this;
     }
 
@@ -86,6 +91,34 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         return method_exists($this, $fn) ? $this->$fn() : $this->_typeSelect();
     }
 
+    public function _($messageId)
+    {
+        if (null === $this->resource) return $messageId;
+
+        return $this->resource->_($messageId);
+    }
+
+    public function _n($messageId, $pluralId, $n)
+    {
+        if (null === $this->resource) return $messageId;
+
+        return $this->resource->_n($messageId, $pluralId, $n);
+    }
+
+    public function _x($messageId, $ctxt)
+    {
+        if (null === $this->resource) return $ctxt . $messageId;
+
+        return $this->resource->_x($messageId, $ctxt);
+    }
+
+    public function _nx($messageId, $pluralId, $n, $ctxt)
+    {
+        if (null === $this->resource) return $ctxt . $messageId;
+
+        return $this->resource->_nx($messageId, $pluralId, $n, $ctxt);
+    }
+
     /**
      * This function creates HTML for the select pull-down, with the
      * current language being selected. Its option entries have a data-url
@@ -93,7 +126,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      * handler for this select, which should go to the URL given in the
      * data-url attribute.
      */
-    private function _typeSelect()
+    protected function _typeSelect()
     {
         $languages = $this->resource->getLanguages();
         $language = $this->resource->getLanguage();
@@ -117,7 +150,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      * The list elements contain a link which will go to the corresponding
      * URL for this language, so no JavaScript implementation is needed.
      */
-    private function _typeList()
+    protected function _typeList()
     {
         $languages = $this->resource->getLanguages();
         $language = $this->resource->getLanguage();

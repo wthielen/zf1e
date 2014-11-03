@@ -13,8 +13,22 @@
  */
 class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
 {
+    // The language variable
+    protected $lang;
+
     // The array that holds the action names of multi-language-aware actions
     protected $i18nActions = array();
+
+    public function init()
+    {
+        parent::init();
+
+        $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
+        $this->lang = $resource->getLanguage();
+        if (is_null($this->lang)) $this->lang = $resource->getDefault();
+
+        $this->view->lang = $this->lang;
+    }
 
     public function postDispatch()
     {
