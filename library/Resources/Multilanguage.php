@@ -3,7 +3,9 @@
 class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstract
 {
     private $language;
+
     private $translate;
+    private $fallback;
 
     private static $_adapterExt = array(
         'gettext' => '.mo',
@@ -50,6 +52,10 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Zend_Translate initializer
+     *
+     * Initializes the translator, and if necessary prepares a fallback
+     * translator as well using the default language, in case the message 
+     * IDs have not been translated in the current language.
      */
     public function initTranslate()
     {
@@ -71,11 +77,20 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getLanguage() . self::$_adapterExt[$adapter]
             );
 
-            if (!file_exists($config['content'])) {
-                $config['content'] = $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter];
-            }
+            $fallback_config = array(
+                'adapter' => $adapter,
+                'content' => $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter]
+            );
 
-            $this->translate = new Zend_Translate($config);
+            if (!file_exists($config['content'])) {
+                $this->translate = new Zend_Translate($fallback_config);
+                $this->fallback = null;
+            } else {
+                $this->translate = new Zend_Translate($config);
+                if ($this->getDefault() != $this->getLanguage()) {
+                    $this->fallback = new Zend_Translate($fallback_config);
+                }
+            }
         }
     }
 
@@ -135,6 +150,9 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      *
      * It supports variable arguments, so that if the text contains sprintf placeholders,
      * they will be replaced by the arguments passed.
+     *
+     * If the given message ID has not been translated, and there is a fallback translator,
+     * then it will be translated by the fallback translator.
      */
     public function _($messageId)
     {
@@ -143,6 +161,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         }
 
         $txt = $this->translate->translate($messageId);
+        if ($txt == $messageId && !is_null($this->fallback)) $txt = $this->fallback->translate($messageId);
 
         $args = func_get_args();
         if (count($args) == 1) return $txt;
@@ -166,6 +185,11 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $txt = $this->translate->translate(array(
             $messageId, $pluralId, $n
         ));
+        if ($txt == $messageId && !is_null($this->fallback)) {
+            $txt = $this->fallback->translate(array(
+                $messageId, $pluralId, $n
+            ));
+        }
 
         return sprintf($txt, $n);
     }
@@ -182,7 +206,9 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             return $messageId;
         }
 
-        $txt = $this->translate->translate($ctxt . chr(4) . $messageId);
+        $msgId = $ctxt . chr(4) . $messageId;
+        $txt = $this->translate->translate($msgId);
+        if ($txt == $msgId && !is_null($this->fallback)) $txt = $this->fallback->translate($msgId);
 
         $args = func_get_args();
         if (count($args) == 2) return $txt;
@@ -200,11 +226,16 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             return $messageId;
         }
 
+        $msgId = $ctxt . chr(4) . $messageId;
+        $plrId = $ctxt . chr(4) . $pluralId;
         $txt = $this->translate->translate(array(
-            $ctxt . chr(4) . $messageId,
-            $ctxt . chr(4) . $pluralId,
-            $n
+            $msgId, $plrId, $n
         ));
+        if ($txt == $msgId && !is_null($this->fallback)) {
+            $txt = $this->fallback->translate(array(
+                $msgId, $plrId, $n
+            ));
+        }
 
         return sprintf($txt, $n);
     }
