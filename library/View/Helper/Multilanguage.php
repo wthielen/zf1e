@@ -95,7 +95,8 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     {
         if (null === $this->resource) return $messageId;
 
-        return $this->resource->_($messageId);
+        $args = func_get_args();
+        return call_user_func_array(array($this->resource, "_"), $args);
     }
 
     public function _n($messageId, $pluralId, $n)
@@ -109,7 +110,8 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
     {
         if (null === $this->resource) return $ctxt . $messageId;
 
-        return $this->resource->_x($messageId, $ctxt);
+        $args = func_get_args();
+        return call_user_func_array(array($this->resource, "_x"), $args);
     }
 
     public function _nx($messageId, $pluralId, $n, $ctxt)

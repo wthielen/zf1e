@@ -54,6 +54,15 @@ class ZFE_Model_Base
     }
 
     /**
+     * The magic unsetter. It removes the specific key from the data
+     * array.
+     */
+    public function __unset($key)
+    {
+        unset($this->_data[$key]);
+    }
+
+    /**
      * The magic getter. It checks for the specific getter function,
      * and whether the given key is a translated entry.
      */

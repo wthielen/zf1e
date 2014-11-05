@@ -167,6 +167,11 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         if (count($args) == 1) return $txt;
 
         array_shift($args);
+
+        // Check the number of levels in the $args array
+        $test = current($args);
+        $args = is_array($test) ? $test : $args;
+
         return vsprintf($txt, $args);
     }
 
@@ -213,6 +218,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $args = func_get_args();
         if (count($args) == 2) return $txt;
 
+        array_shift($args);
         array_shift($args);
         return vsprintf($txt, $args);
     }

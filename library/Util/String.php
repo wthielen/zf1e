@@ -17,6 +17,16 @@ abstract class ZFE_Util_String
     }
 
     /**
+     * isMultiByte
+     *
+     * Checks whether the given string is a multibyte string
+     */
+    public static function isMultiByte($str)
+    {
+        return strlen($str) != mb_strlen($str);
+    }
+
+    /**
      * chop
      *
      * Multibyte-safe chop function that adds an ellipsis
