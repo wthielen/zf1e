@@ -53,7 +53,7 @@ abstract class ZFE_Core
             return;
         }
 
-        if (strpos(APPLICATION_ENV, 'development') !== false) {
+        if (ZFE_Environment::isDevelopment()) {
             call_user_func_array(array(get_called_class(), '_dump'), $vars);
         }
     }

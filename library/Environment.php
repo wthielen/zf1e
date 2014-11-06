@@ -62,4 +62,9 @@ final class ZFE_Environment
         $resourceTypes = $autoloader->getResourceTypes();
         return $resourceTypes[$type]['namespace'];
     }
+
+    public static function isDevelopment()
+    {
+        return strpos(APPLICATION_ENV, 'development') !== false;
+    }
 }
