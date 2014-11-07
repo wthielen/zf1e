@@ -34,6 +34,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         parent::__construct();
 
         $this->_cache = array();
+        $this->_refCache = array();
 
         self::getDatabase();
     }
@@ -124,9 +125,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
-     * Registers the MongoDB application plugin resource and initializes it, when a
-     * connection is requested. It stores the plugin resource and the database adapter
-     * as static entries in the model.
+     * Registers the database adapter in this model.
      *
      * Because the constructor calls this function, nothing needs to be done in the
      * application's bootstrap. Just create a Mongo document object :)
@@ -134,6 +133,20 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     final public static function getDatabase()
     {
         if (null === self::$db) {
+            self::$db = self::getResource()->getDatabase();
+        }
+
+        return self::$db;
+    }
+
+    /**
+     * Registers the MongoDB application plugin resource and initializes it, when a
+     * connection is requested. It stores the plugin resource as a static entry in
+     * the model.
+     */
+    final public static function getResource()
+    {
+        if (null === self::$resource) {
             $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
             if (null === ($resource = $bootstrap->getPluginResource('Mongo'))) {
                 $bootstrap->registerPluginResource('Mongo');
@@ -142,10 +155,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
 
             self::$resource = $resource;
-            self::$db = $resource->getDatabase();
         }
 
-        return self::$db;
+        return self::$resource;
     }
 
     /**
@@ -242,11 +254,20 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
         };
 
-        array_walk($args['query'], function(&$val) use($replaceWithReference) {
+        array_walk($args['query'], function(&$val, $key) use($replaceWithReference) {
+            if ($key[0] == '$') return;
+
             // Create a $in operation for multiple arguments to a query field
             if (is_array($val)) {
-                array_walk($val, $replaceWithReference);
-                $val = array('$in' => $val);
+                $keys = array_keys($val);
+                $mongoOperators = array_reduce($keys, function($u, $v) {
+                    return $u || $v[0] == '$';
+                }, false);
+
+                if (!$mongoOperators) {
+                    array_walk($val, $replaceWithReference);
+                    $val = array('$in' => $val);
+                }
             } else {
                 $replaceWithReference($val);
             }
