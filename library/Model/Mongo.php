@@ -5,6 +5,8 @@
  */
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
+    protected $_id;
+
     protected static $resource;
     protected static $db;
     protected static $collection;
@@ -33,7 +35,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         parent::__construct();
 
-        $this->_cache = array();
         $this->_refCache = array();
 
         self::getDatabase();
@@ -96,8 +97,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $val = new $cls();
-            $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+            $val = $cls::_map(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
 
             $this->_refCache[$key] = $val;
             return $val;
@@ -168,7 +168,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $whitelist = array(
             'count',
             'findOne',
-            'remove'
+            'remove',
+            'aggregate'
         );
 
         if (!in_array($name, $whitelist)) {
@@ -181,7 +182,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if ($ret) {
             switch($name) {
             case 'findOne':
-                $ret = self::_map($ret);
+                $ret = static::_map($ret);
                 break;
             }
         }
@@ -200,7 +201,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // one find() call, and stores the objects in the process cache.
         // Then it returns a slice of the cache with the requested IDs.
         if (is_array($id)) {
-            $toFetch = array_diff($id, array_keys(self::$_cache));
+            $toFetch = array_values(array_diff($id, array_keys(self::$_cache)));
             if (count($toFetch)) {
                 $fetched = self::find(array('query' => array(
                     static::$_identifierField => $toFetch
@@ -237,6 +238,14 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         return null;
+    }
+
+    /**
+     * Returns the Mongo identifier
+     */
+    public function getMongoIdentifier()
+    {
+        return $this->_id;
     }
 
     /**
@@ -333,7 +342,21 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     public function save()
     {
         $collection = self::getCollection();
-        $collection->save($this->_data);
+
+        $data = $this->_data;
+
+        if (isset($this->_id)) {
+            $data = array_merge(
+                array('_id' => $this->_id),
+                $data
+            );
+        }
+
+        $collection->save($data);
+
+        $this->_id = $data['_id'];
+        unset($data['_id']);
+        $this->_data = $data;
 
         // Remove from cache after saving
         unset(self::$_cache[$this->_data[static::$_identifierField]]);
@@ -347,20 +370,27 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function getReference()
     {
-        if (!isset($this->_data['_id'])) {
+        if (!isset($this->_id)) {
             $this->save();
         }
 
-        return MongoDBRef::create(static::$collection, $this->_data['_id']);
+        return MongoDBRef::create(static::$collection, $this->_id);
     }
 
     /**
      * Maps data from the MongoDB database into an object instance
      */
-    private static function _map(array $data)
+    protected static function _map(array $data)
     {
         $obj = new static();
+
+        if (isset($data['_id'])) {
+            $obj->_id = $data['_id'];
+            unset($data['_id']);
+        }
+
         $obj->init($data);
+
         return $obj;
     }
 }
