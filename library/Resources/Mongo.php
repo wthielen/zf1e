@@ -13,6 +13,8 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
     private $password;
     private $database;
 
+    private $mapping = array();
+
     /**
      * Initialize the plugin
      *
@@ -33,6 +35,10 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
         $this->username = isset($o['username']) ? $o['username'] : null;
         $this->password = isset($o['password']) ? $o['password'] : null;
         $this->database = $o['database'];
+
+        if (isset($o['mapping']) && is_array($o['mapping'])) {
+            $this->mapping = array_merge($this->mapping, $o['mapping']);
+        }
 
         return $this;
     }
@@ -67,15 +73,24 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
      */
     public function getClass($collectionName)
     {
-        $o = $this->getOptions();
-        $mapping = isset($o['mapping']) ? $o['mapping'] : array();
-
-        if (isset($o['mapping'][$collectionName])) {
-            $cls = $o['mapping'][$collectionName];
+        if (isset($this->mapping[$collectionName])) {
+            $cls = $this->mapping[$collectionName];
         } else {
             $cls = ZFE_Environment::getResourcePrefix('model') . '_' . ucfirst($collectionName);
         }
 
         return $cls;
+    }
+
+    public function addMapping($collectionName, $className)
+    {
+        $this->mapping[$collectionName] = $className;
+    }
+
+    public function addMappings($mappings)
+    {
+        foreach($mappings as $coll => $cls) {
+            $this->addMapping($coll, $cls);
+        }
     }
 }
