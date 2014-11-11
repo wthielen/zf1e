@@ -191,10 +191,14 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
-     * Gets an entry from the database, given the identifier(s)
+     * Gets an entry from the database, given the identifier(s) and the field name
+     *
+     * If no field name is given, the stored _identifierField is used.
      */
-    public static function get($id)
+    public static function get($id, $field = null)
     {
+        $field = is_null($field) ? static::$_identifierField : $field;
+
         // Multiple parameters case:
         // Checks if there are any IDs not in the cache, which we need
         // to load from the database. If there are any, it fetches them using
@@ -203,12 +207,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if (is_array($id)) {
             $toFetch = array_values(array_diff($id, array_keys(self::$_cache)));
             if (count($toFetch)) {
-                $fetched = self::find(array('query' => array(
-                    static::$_identifierField => $toFetch
-                )));
+                $fetched = self::find(array('query' => array($field => $toFetch)));
 
                 foreach($fetched['result'] as $entry) {
-                    self::$_cache[$entry->getIdentifier()] = $entry;
+                    self::$_cache[$entry->getIdentifier($field)] = $entry;
                 }
             }
 
@@ -219,9 +221,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Simply fetch it from the database and store it in the cache if
         // it is not already stored in the cache, and then return from cache.
         if (!isset(self::$_cache[$id])) {
-            self::$_cache[$id] = self::findOne(array(
-                static::$_identifierField => $id
-            ));
+            self::$_cache[$id] = self::findOne(array($field => $id));
         }
 
         return self::$_cache[$id];
@@ -231,10 +231,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * Returns the identifier of this entry using the
      * protected $_identifierField field
      */
-    public function getIdentifier()
+    public function getIdentifier($field = null)
     {
-        if (isset($this->_data[static::$_identifierField])) {
-            return $this->_data[static::$_identifierField];
+        $field = is_null($field) ? static::$_identifierField : $field;
+
+        if (isset($this->_data[$field])) {
+            return $this->_data[$field];
         }
 
         return null;
