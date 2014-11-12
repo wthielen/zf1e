@@ -10,6 +10,16 @@ abstract class ZFE_Core
     }
 
     /**
+     * Swaps the value of two variables
+     */
+    public static function swap(&$x, &$y)
+    {
+        $tmp = $y;
+        $y = $x;
+        $x = $tmp;
+    }
+
+    /**
      * Convenience function to get the language based on the
      * MultiLanguage resource, or in its absence based on the
      * locale
@@ -25,6 +35,9 @@ abstract class ZFE_Core
         return $locale->getLanguage();
     }
 
+    /**
+     * Gets the browser information and caches it in a static variable
+     */
     public static function getBrowser() {
         if (is_null(self::$browserinfo)) {
             self::$browserinfo = @get_browser();

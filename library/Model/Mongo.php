@@ -124,6 +124,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return self::getDatabase()->{static::$collection};
     }
 
+    final public static function getGridFS()
+    {
+        return self::getDatabase()->getGridFS(static::$collection);
+    }
+
     /**
      * Registers the database adapter in this model.
      *
