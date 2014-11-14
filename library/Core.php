@@ -89,8 +89,8 @@ abstract class ZFE_Core
         $file = str_replace(realpath(APPLICATION_PATH . "/.."), "", $source['file']);
         echo "<p>(root)<b>" . $file . "</b>:" . $source['line'] . " dumped:</p>" . PHP_EOL;
 
-        if (!extension_loaded("xdebug")) echo "<pre>";
+        if (!extension_loaded("xdebug") || ini_get('html_errors') == 0) echo "<pre>";
         call_user_func_array('var_dump', $vars);
-        if (!extension_loaded("xdebug")) echo "</pre>";
+        if (!extension_loaded("xdebug") || ini_get('html_errors') == 0) echo "</pre>";
     }
 }
