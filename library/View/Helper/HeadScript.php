@@ -28,7 +28,7 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
     public function toString($indent = null)
     {
         // Return early if no minifier has been set up
-        if (false === $this->_minifier) {
+        if (false === $this->_minifier || !$this->_minifier->doBundle()) {
             return parent::toString($indent);
         }
 
