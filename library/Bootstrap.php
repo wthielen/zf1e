@@ -12,7 +12,21 @@ public function _initZFE()
  **/
 class ZFE_Bootstrap
 {
+    protected static $bootstrap;
+
     public static function run($bootstrap)
+    {
+        ZFE_Util_Stopwatch::start('page');
+
+        self::$bootstrap = $bootstrap;
+
+        $methods = get_class_methods(get_called_class());
+        foreach($methods as $method) {
+            if (strpos($method, "_init") === 0) self::$method();
+        }
+    }
+
+    private static function _initLibrary()
     {
         // Register the ZFE controller plugins as helpers
         Zend_Controller_Action_HelperBroker::addPath(

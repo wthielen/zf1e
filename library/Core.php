@@ -71,6 +71,20 @@ abstract class ZFE_Core
         }
     }
 
+    public static function halt()
+    {
+        $vars = func_get_args();
+
+        self::dump($vars);
+
+        if (Zend_Registry::isRegistered('ZFE_DebugFilter')) {
+            $debugFilter = Zend_Registry::get('ZFE_DebugFilter');
+            if ($debugFilter->isAllowed()) die("Halted");
+        }
+
+        if (ZFE_Environment::isDevelopment()) die("Halted");
+    }
+
     /**
      * The private function _dump() that does the actual dump for dump().
      * It adds the filename and linenumber from the backtrace in pretty-print
