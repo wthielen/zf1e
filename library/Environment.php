@@ -63,6 +63,12 @@ final class ZFE_Environment
         return $resourceTypes[$type]['namespace'];
     }
 
+    public static function getLibraryPath()
+    {
+        // TODO Use includePaths.library from application.ini
+        return realpath(APPLICATION_PATH . '/../library');
+    }
+
     public static function isDevelopment()
     {
         return strpos(APPLICATION_ENV, 'development') !== false;
