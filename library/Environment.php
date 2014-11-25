@@ -69,6 +69,11 @@ final class ZFE_Environment
         return realpath(APPLICATION_PATH . '/../library');
     }
 
+    public static function getDocumentRoot()
+    {
+        return realpath($_SERVER['DOCUMENT_ROOT']);
+    }
+
     public static function isDevelopment()
     {
         return strpos(APPLICATION_ENV, 'development') !== false;

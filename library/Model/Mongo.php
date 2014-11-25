@@ -85,10 +85,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         if (!isset($this->_data[$key])) return null;
 
-        if (MongoDBRef::isRef($this->_data[$key])) {
+        $val = parent::__get($key);
+
+        if (MongoDBRef::isRef($val)) {
             if (isset($this->_refCache[$key])) return $this->_refCache[$key];
 
-            $ref = $this->_data[$key]['$ref'];
+            $ref = $val['$ref'];
             $cls = self::$resource->getClass($ref);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
@@ -97,19 +99,34 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $val = $cls::_map(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+            $val = $cls::_map(MongoDBRef::get(self::getDatabase(), $val));
 
             $this->_refCache[$key] = $val;
             return $val;
         }
 
-        if ($this->_data[$key] instanceof MongoDate) {
-            $val = new DateTime('@' . $this->_data[$key]->sec);
+        if ($val instanceof MongoDate) {
+            $val = new DateTime('@' . $val->sec);
             $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
             return $val;
         }
 
-        return parent::__get($key);
+        return $val;
+    }
+
+    public function setTranslation($key, $val, $lang)
+    {
+        // If it is a Mongo entity, convert it to its reference
+        if ($val instanceof ZFE_Model_Mongo) {
+            $val = $val->getReference();
+        }
+
+        // If it is a DateTime, convert it to MongoDate
+        if ($val instanceof DateTime) {
+            $val = new MongoDate($val->getTimestamp());
+        }
+
+        parent::setTranslation($key, $val, $lang);
     }
 
     /**
