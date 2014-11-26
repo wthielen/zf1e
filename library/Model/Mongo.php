@@ -99,7 +99,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $val = $cls::_map(MongoDBRef::get(self::getDatabase(), $val));
+            $val = $cls::map(MongoDBRef::get(self::getDatabase(), $val));
 
             $this->_refCache[$key] = $val;
             return $val;
@@ -204,7 +204,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if ($ret) {
             switch($name) {
             case 'findOne':
-                $ret = static::_map($ret);
+                $ret = static::map($ret);
                 break;
             }
         }
@@ -334,7 +334,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         $ret = array(
-            'result' => array_map(array(get_called_class(), '_map'), iterator_to_array($cursor)),
+            'result' => array_map(array(get_called_class(), 'map'), iterator_to_array($cursor)),
             'total' => $count
         );
 
@@ -404,7 +404,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Maps data from the MongoDB database into an object instance
      */
-    protected static function _map(array $data)
+    public static function map(array $data)
     {
         $obj = new static();
 
