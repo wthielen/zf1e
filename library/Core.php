@@ -10,6 +10,16 @@ abstract class ZFE_Core
     }
 
     /**
+     * Type-casts an object from one type to another
+     */
+    public static function cast($obj, $cls)
+    {
+        return unserialize(
+            preg_replace('/^O:\d+:"[^"]*"/', 'O:' . strlen($cls) . ':"' . $cls . '"', serialize($obj))
+        );
+    }
+
+    /**
      * Swaps the value of two variables
      */
     public static function swap(&$x, &$y)
