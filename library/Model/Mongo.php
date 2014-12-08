@@ -132,7 +132,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Gets the Mongo collection corresponding to this model
      */
-    final public static function getCollection()
+    public static function getCollection()
     {
         if (is_null(static::$collection)) {
             throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
@@ -191,6 +191,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             'count',
             'findOne',
             'remove',
+            'drop',
             'aggregate'
         );
 
@@ -198,7 +199,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             throw new ZFE_Model_Mongo_Exception("Unknown static function $name");
         }
 
-        $ret = call_user_func_array(array(self::getCollection(), $name), $args);
+        $ret = call_user_func_array(array(static::getCollection(), $name), $args);
 
         // Do some conversion if needed
         if ($ret) {
@@ -306,12 +307,24 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
         });
 
-        $cursor = self::getCollection()->find($args['query'], $args['fields']);
+        // Add projection keys for $meta sort entries
+        if (isset($args['sort']) && is_array($args['sort'])) {
+            foreach($args['sort'] as $fld => $entry) {
+                if (is_array($entry) && isset($entry['$meta'])) {
+                    $args['fields'][$fld] = $entry;
+                }
+            }
+        }
+
+        $cursor = static::getCollection()->find($args['query'], $args['fields']);
         $count = $cursor->count();
 
         if (isset($args['sort']) && is_array($args['sort'])) {
             // Convert 'asc' and 'desc' to 1 and -1
             foreach($args['sort'] as &$val) {
+                // Skip metadata sorting
+                if (is_array($val)) continue;
+
                 $val = strtolower($val);
                 if ($val == 'asc') {
                     $val = 1;
@@ -365,7 +378,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function save()
     {
-        $collection = self::getCollection();
+        $collection = static::getCollection();
 
         $data = $this->_data;
 
@@ -404,7 +417,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Maps data from the MongoDB database into an object instance
      */
-    public static function map(array $data)
+    public static function map($data)
     {
         $obj = new static();
 
