@@ -33,6 +33,11 @@ class ZFE_Model_Mongo_File extends ZFE_Model_Mongo
         return parent::getCollection();
     }
 
+    public static function setStoragePath($path)
+    {
+        static::$storagePath = realpath($path);
+    }
+
     public static function getStorageType()
     {
         return is_null(static::$storagePath) ? static::STORAGE_GRIDFS : static::STORAGE_FS;
