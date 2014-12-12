@@ -6,6 +6,7 @@ final class ZFE_Util_Stopwatch
      * Timings to keep
      */
     private static $timings = array();
+    private static $cumulative = array();
 
     /**
      * start
@@ -38,6 +39,8 @@ final class ZFE_Util_Stopwatch
         self::$timings[$identifier]['duration'] =
             self::$timings[$identifier]['stop'] - 
             self::$timings[$identifier]['start'];
+
+        self::time($identifier);
     }
 
     /**
@@ -57,6 +60,14 @@ final class ZFE_Util_Stopwatch
         } else {
             unset(self::$timings[$identifier]);
         }
+    }
+
+    public static function time($label)
+    {
+        self::$cumulative[] = array(
+            'label' => $label,
+            'ts' => microtime(true)
+        );
     }
 
     /**
@@ -96,5 +107,17 @@ final class ZFE_Util_Stopwatch
         });
 
         echo "<pre style=\"clear: both;\">" . print_r(self::$timings, true) . "</pre>";
+
+        if (count(self::$cumulative)) {
+            $prev = array();
+
+            echo "<pre style=\"clear: both;\">";
+            foreach(self::$cumulative as $i => $data) {
+                echo "[" . $i . "] (" . $data['ts'] . ") " . $data['label'] . ": " . ($i == 0 ? 0 : $data['ts'] - $prev['ts']) . "s" . PHP_EOL;
+                $prev = $data;
+            }
+            echo "</pre>";
+        }
+        echo "</pre>";
     }
 }
