@@ -28,7 +28,9 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         $firstPage = $pageInfo['page'] == 1;
         $lastPage = $pageInfo['page'] == $pageInfo['pages'];
 
-        $html = '<ul class="pagination">';
+        $html = '<ul class="pagination"';
+        foreach($options as $key => $val) $html .= " data-$key=\"$val\"";
+        $html .= '>';
 
         // If not on the first page, show the "go to first page" and the "go to
         // previous page" links.
