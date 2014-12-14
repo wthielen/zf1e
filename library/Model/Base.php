@@ -88,6 +88,15 @@ class ZFE_Model_Base
         return $this->_data[$key][$lang];
     }
 
+    /**
+     * The magic isset check. It checks whether the given field
+     * has been defined in the data array.
+     */
+    public function __isset($key)
+    {
+        return isset($this->_data[$key]);
+    }
+
     public function toArray()
     {
         return $this->_data;

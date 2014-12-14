@@ -85,10 +85,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         if (!isset($this->_data[$key])) return null;
 
-        if (MongoDBRef::isRef($this->_data[$key])) {
+        $val = parent::__get($key);
+
+        if (MongoDBRef::isRef($val)) {
             if (isset($this->_refCache[$key])) return $this->_refCache[$key];
 
-            $ref = $this->_data[$key]['$ref'];
+            $ref = $val['$ref'];
             $cls = self::$resource->getClass($ref);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
@@ -97,25 +99,40 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $val = $cls::_map(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+            $val = $cls::map(MongoDBRef::get(self::getDatabase(), $val));
 
             $this->_refCache[$key] = $val;
             return $val;
         }
 
-        if ($this->_data[$key] instanceof MongoDate) {
-            $val = new DateTime('@' . $this->_data[$key]->sec);
+        if ($val instanceof MongoDate) {
+            $val = new DateTime('@' . $val->sec);
             $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
             return $val;
         }
 
-        return parent::__get($key);
+        return $val;
+    }
+
+    public function setTranslation($key, $val, $lang)
+    {
+        // If it is a Mongo entity, convert it to its reference
+        if ($val instanceof ZFE_Model_Mongo) {
+            $val = $val->getReference();
+        }
+
+        // If it is a DateTime, convert it to MongoDate
+        if ($val instanceof DateTime) {
+            $val = new MongoDate($val->getTimestamp());
+        }
+
+        parent::setTranslation($key, $val, $lang);
     }
 
     /**
      * Gets the Mongo collection corresponding to this model
      */
-    final public static function getCollection()
+    public static function getCollection()
     {
         if (is_null(static::$collection)) {
             throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
@@ -174,6 +191,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             'count',
             'findOne',
             'remove',
+            'drop',
             'aggregate'
         );
 
@@ -181,13 +199,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             throw new ZFE_Model_Mongo_Exception("Unknown static function $name");
         }
 
-        $ret = call_user_func_array(array(self::getCollection(), $name), $args);
+        $ret = call_user_func_array(array(static::getCollection(), $name), $args);
 
         // Do some conversion if needed
         if ($ret) {
             switch($name) {
             case 'findOne':
-                $ret = static::_map($ret);
+                $ret = static::map($ret);
                 break;
             }
         }
@@ -289,12 +307,24 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
         });
 
-        $cursor = self::getCollection()->find($args['query'], $args['fields']);
+        // Add projection keys for $meta sort entries
+        if (isset($args['sort']) && is_array($args['sort'])) {
+            foreach($args['sort'] as $fld => $entry) {
+                if (is_array($entry) && isset($entry['$meta'])) {
+                    $args['fields'][$fld] = $entry;
+                }
+            }
+        }
+
+        $cursor = static::getCollection()->find($args['query'], $args['fields']);
         $count = $cursor->count();
 
         if (isset($args['sort']) && is_array($args['sort'])) {
             // Convert 'asc' and 'desc' to 1 and -1
             foreach($args['sort'] as &$val) {
+                // Skip metadata sorting
+                if (is_array($val)) continue;
+
                 $val = strtolower($val);
                 if ($val == 'asc') {
                     $val = 1;
@@ -317,7 +347,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         $ret = array(
-            'result' => array_map(array(get_called_class(), '_map'), iterator_to_array($cursor)),
+            'result' => array_map(array(get_called_class(), 'map'), iterator_to_array($cursor)),
             'total' => $count
         );
 
@@ -348,7 +378,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function save()
     {
-        $collection = self::getCollection();
+        $collection = static::getCollection();
 
         $data = $this->_data;
 
@@ -387,7 +417,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Maps data from the MongoDB database into an object instance
      */
-    protected static function _map(array $data)
+    public static function map($data)
     {
         $obj = new static();
 

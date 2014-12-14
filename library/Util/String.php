@@ -89,4 +89,27 @@ abstract class ZFE_Util_String
 
         return $ret;
     }
+
+    /**
+     * A convenience function to check if the string starts
+     * with some string.
+     */
+    public static function startsWith($str, $start)
+    {
+        $str = @trim($str);
+
+        return strpos($str, $start) === 0;
+    }
+
+    /**
+     * A convenience function to check if the string ends with
+     * some string.
+     */
+    public static function endsWith($str, $end)
+    {
+        $str = @trim($str);
+
+        return strrpos($str, $end) === strlen($str) - strlen($end);
+    }
+
 }

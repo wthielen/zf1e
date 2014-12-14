@@ -92,8 +92,7 @@ class ZFE_Model_Mongo_Subdocument extends ZFE_Model_Base
                 );
             }
 
-            $val = new $cls();
-            $val->init(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
+            $val = $cls::map(MongoDBRef::get(self::getDatabase(), $this->_data[$key]));
 
             $this->_refCache[$key] = $val;
             return $val;
