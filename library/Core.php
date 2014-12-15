@@ -107,8 +107,12 @@ abstract class ZFE_Core
     {
         $vars = func_get_args();
 
+        // Get backtrace and find the first entry where it calls the
+        // ZFE_Core functions
         $bt = debug_backtrace();
-        $source = $bt[2];
+        do {
+            $source = next($bt);
+        } while($source['file'] === __FILE__);
 
         $file = str_replace(realpath(APPLICATION_PATH . "/.."), "", $source['file']);
         echo "<p>(root)<b>" . $file . "</b>:" . $source['line'] . " dumped:</p>" . PHP_EOL;
