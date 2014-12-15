@@ -74,6 +74,11 @@ final class ZFE_Environment
         return realpath($_SERVER['DOCUMENT_ROOT']);
     }
 
+    public static function getFilePath($path)
+    {
+        return self::getDocumentRoot() . $path;
+    }
+
     public static function isDevelopment()
     {
         return strpos(APPLICATION_ENV, 'development') !== false;

@@ -38,15 +38,20 @@ class ZFE_Controller_Base extends Zend_Controller_Action
         $action = $this->getRequest()->getActionName();
 
         // Automatically add CSS and JS
+        $cssFiles = array('default.css', $controller . '.css', $controller . '/' . $action . '.css');
         $headLink = $this->view->headLink();
-        $headLink->appendStylesheet('/css/default.css');
-        $headLink->appendStylesheet('/css/' . $controller . '.css');
-        $headLink->appendStylesheet('/css/' . $controller . '/' . $action . '.css');
+        foreach($cssFiles as $file) {
+            if (!Zend_Loader::isReadable(ZFE_Environment::getFilePath('/css/' . $file))) continue;
+            ZFE_Core::dump("Adding /css/$file");
+            $headLink->appendStylesheet('/css/' . $file);
+        }
 
+        $jsFiles = array('default.js', $controller . '.js', $controller . '/' . $action . '.js');
         $headScript = $this->view->headScript();
-        $headScript->appendFile('/js/default.js');
-        $headScript->appendFile('/js/' . $controller . '.js');
-        $headScript->appendFile('/js/' . $controller . '/' . $action . '.js');
+        foreach($jsFiles as $file) {
+            if (!Zend_Loader::isReadable(ZFE_Environment::getFilePath('/js/' . $file))) continue;
+            $headScript->appendFile('/js/' . $file);
+        }
 
         // Call the action's pre-function
         $func = 'pre' . ucfirst(strtolower($action)) . 'Action';
