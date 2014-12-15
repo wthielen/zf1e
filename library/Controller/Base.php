@@ -42,7 +42,6 @@ class ZFE_Controller_Base extends Zend_Controller_Action
         $headLink = $this->view->headLink();
         foreach($cssFiles as $file) {
             if (!Zend_Loader::isReadable(ZFE_Environment::getFilePath('/css/' . $file))) continue;
-            ZFE_Core::dump("Adding /css/$file");
             $headLink->appendStylesheet('/css/' . $file);
         }
 
