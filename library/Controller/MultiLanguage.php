@@ -32,12 +32,14 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
 
     public function postDispatch()
     {
+        parent::postDispatch();
+
         $action = $this->getRequest()->getActionName();
+        $viewRenderer = $this->getHelper('ViewRenderer');
 
         // If the action is in the i18nActions variable, update the script name to render
         if (in_array($action, $this->i18nActions)) {
             $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
-            $viewRenderer = $this->getHelper('ViewRenderer');
 
             $lang = $resource->getLanguage();
             $default = $resource->getDefault();
