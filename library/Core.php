@@ -85,7 +85,7 @@ abstract class ZFE_Core
     {
         $vars = func_get_args();
 
-        self::dump($vars);
+        self::dump(count($vars) == 1 ? array_shift($vars) : $vars);
 
         if (Zend_Registry::isRegistered('ZFE_DebugFilter')) {
             $debugFilter = Zend_Registry::get('ZFE_DebugFilter');

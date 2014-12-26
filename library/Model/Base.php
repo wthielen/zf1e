@@ -13,9 +13,13 @@ class ZFE_Model_Base
     protected $_data;
     protected static $translations = array();
 
+    // The language to use for __get and __set
+    protected $_lang;
+
     public function __construct()
     {
         $this->_data = array();
+        $this->_lang = ZFE_Core::getLanguage();
     }
 
     /**
@@ -48,8 +52,7 @@ class ZFE_Model_Base
         if (is_array($val)) {
             $this->_data[$key] = array_merge($this->_data[$key], $val);
         } else {
-            $lang = ZFE_Core::getLanguage();
-            $this->_data[$key][$lang] = $val;
+            $this->_data[$key][$this->_lang] = $val;
         }
     }
 
@@ -79,7 +82,7 @@ class ZFE_Model_Base
 
         // The key is a translatable data entry, so we try figuring out
         // the language to use
-        $lang = ZFE_Core::getLanguage();
+        $lang = $this->_lang;
         if (!isset($this->_data[$key][$lang])) {
             $languages = array_keys($this->_data[$key]);
             $lang = $languages[0];
@@ -143,5 +146,17 @@ class ZFE_Model_Base
         if (!in_array($key, static::$translations)) return $this->$key;
 
         return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
+    }
+
+    public static function getTranslatedFields()
+    {
+        return static::$translations;
+    }
+
+    public function setLanguage($lang)
+    {
+        // TODO Check $lang validity?
+
+        $this->_lang = $lang;
     }
 }

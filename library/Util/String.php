@@ -112,4 +112,29 @@ abstract class ZFE_Util_String
         return strrpos($str, $end) === strlen($str) - strlen($end);
     }
 
+    /**
+     * An utility function to convert a string to camelcase.
+     * The rules are simple. The first character is lowercase.
+     * Every underscore, period or dash is a sign that the
+     * next character should be capitalized.
+     */
+    public static function toCamelCase($str, $delim = array('-', '_', '.'))
+    {
+        $ret = '';
+
+        $len = strlen($str);
+        $doUpper = false;
+        for($i = 0; $i < $len; $i++) {
+            if (in_array($str[$i], $delim)) {
+                $doUpper = true;
+                continue;
+            }
+
+            $ret .= $doUpper ? strtoupper($str[$i]) : strtolower($str[$i]);
+            $doUpper = false;
+        }
+
+        return $ret;
+    }
+
 }

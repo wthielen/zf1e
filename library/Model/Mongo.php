@@ -221,6 +221,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     public static function get($id, $field = null)
     {
         $field = is_null($field) ? static::$_identifierField : $field;
+        $class = get_called_class();
+        if (!isset(self::$_cache[$class])) self::$_cache[$class] = array();
 
         // Multiple parameters case:
         // Checks if there are any IDs not in the cache, which we need
@@ -228,26 +230,26 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // one find() call, and stores the objects in the process cache.
         // Then it returns a slice of the cache with the requested IDs.
         if (is_array($id)) {
-            $toFetch = array_values(array_diff($id, array_keys(self::$_cache)));
+            $toFetch = array_values(array_diff($id, array_keys(self::$_cache[$class])));
             if (count($toFetch)) {
                 $fetched = self::find(array('query' => array($field => $toFetch)));
 
                 foreach($fetched['result'] as $entry) {
-                    self::$_cache[$entry->getIdentifier($field)] = $entry;
+                    self::$_cache[$class][$entry->getIdentifier($field)] = $entry;
                 }
             }
 
-            return array_intersect_key(self::$_cache, array_flip($id));
+            return array_intersect_key(self::$_cache[$class], array_flip($id));
         }
 
         // Single parameter case
         // Simply fetch it from the database and store it in the cache if
         // it is not already stored in the cache, and then return from cache.
-        if (!isset(self::$_cache[$id])) {
-            self::$_cache[$id] = self::findOne(array($field => $id));
+        if (!isset(self::$_cache[$class][$id])) {
+            self::$_cache[$class][$id] = self::findOne(array($field => $id));
         }
 
-        return self::$_cache[$id];
+        return self::$_cache[$class][$id];
     }
 
     /**
@@ -396,7 +398,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $this->_data = $data;
 
         // Remove from cache after saving
-        unset(self::$_cache[$this->_data[static::$_identifierField]]);
+        $class = get_called_class();
+        unset(self::$_cache[$class][$this->_data[static::$_identifierField]]);
     }
 
     /**
