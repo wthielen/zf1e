@@ -90,19 +90,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if (MongoDBRef::isRef($val)) {
             if (isset($this->_refCache[$key])) return $this->_refCache[$key];
 
-            $ref = $val['$ref'];
-            $cls = self::$resource->getClass($ref);
-            if (!class_exists($cls)) {
-                throw new ZFE_Model_Mongo_Exception(
-                    "There is no model for the referred entity '" . $ref . "'.
-                    Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
-                );
-            }
+            $obj = static::getObject($val);
 
-            $val = $cls::map(MongoDBRef::get(self::getDatabase(), $val));
-
-            $this->_refCache[$key] = $val;
-            return $val;
+            $this->_refCache[$key] = $obj;
+            return $obj;
         }
 
         if ($val instanceof MongoDate) {
@@ -112,6 +103,24 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         return $val;
+    }
+
+    public static function getObject($ref)
+    {
+        $obj = $ref;
+        if (MongoDBRef::isRef($ref)) {
+            $cls = self::$resource->getClass($ref['$ref']);
+            if (!class_exists($cls)) {
+                throw new ZFE_Model_Mongo_Exception(
+                    "There is no model for the referred entity '" . $ref['$ref'] . "'.
+                    Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
+                );
+            }
+
+            $obj = $cls::map(MongoDBRef::get(self::getDatabase(), $ref));
+        }
+
+        return $obj;
     }
 
     public function setTranslation($key, $val, $lang)
@@ -127,6 +136,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         parent::setTranslation($key, $val, $lang);
+    }
+
+    public function getTranslation($key, $lang)
+    {
+        $translation = parent::getTranslation($key, $lang);
+
+        return static::getObject($translation);
     }
 
     /**

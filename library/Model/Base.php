@@ -30,7 +30,7 @@ class ZFE_Model_Base
     {
         // Check if a user-defined setter method exists,
         // and use that immediately, returning early
-        $setter = "_set" . ucfirst(strtolower($key));
+        $setter = "_" . ZFE_Util_String::toCamelCase("set_" . strtolower($key));
         if (method_exists($this, $setter)) {
             $this->$setter($val);
             return;
@@ -73,7 +73,7 @@ class ZFE_Model_Base
     {
         // Check if a user-defined getter method exists,
         // and use that immediately
-        $getter = "_get" . ucfirst(strtolower($key));
+        $getter = "_" . ZFE_Util_String::toCamelCase("get_" . strtolower($key));
         if (method_exists($this, $getter)) return $this->$getter();
 
         // Check the simple cases, and return these immediately
