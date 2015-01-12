@@ -245,13 +245,17 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // to load from the database. If there are any, it fetches them using
         // one find() call, and stores the objects in the process cache.
         // Then it returns a slice of the cache with the requested IDs.
+        //
+        // TODO $field is not passed to getIdentifier because here it is "model.id"
+        // for another project, which is the field in Mongo, but in _data it is "id".
+        // Not sure what to do here.
         if (is_array($id)) {
             $toFetch = array_values(array_diff($id, array_keys(self::$_cache[$class])));
             if (count($toFetch)) {
                 $fetched = self::find(array('query' => array($field => $toFetch)));
 
                 foreach($fetched['result'] as $entry) {
-                    self::$_cache[$class][$entry->getIdentifier($field)] = $entry;
+                    self::$_cache[$class][$entry->getIdentifier()] = $entry;
                 }
             }
 
