@@ -33,5 +33,10 @@ class ZFE_Bootstrap
             LIBRARY_PATH . '/ZFE/Controller/Helpers',
             'ZFE_Controller_Helper'
         );
+
+        // Load the ZFE_Plugin_ActiveModule plugin
+        self::$bootstrap->bootstrap('frontController');
+        $front = self::$bootstrap->getResource('frontController');
+        $front->registerPlugin(new ZFE_Plugin_ActiveModule());
     }
 }
