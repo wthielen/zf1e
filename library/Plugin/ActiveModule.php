@@ -14,8 +14,8 @@
  *
  * And this plugin and other code are based on this blog.
  *
- * So instead of a Bootstrap.php, we'll have an Initializer.php in the module
- * directories.
+ * So next to a Bootstrap.php, we'll also have a bootstrap/Initializer.php in the
+ * module directories.
  */
 class ZFE_Plugin_ActiveModule extends Zend_Controller_Plugin_Abstract
 {
