@@ -11,10 +11,12 @@ class ZFE_Module_Bootstrap extends Zend_Application_Module_Bootstrap
 
     protected function _loadModuleConfig()
     {
-        $front = Zend_Controller_Front::getInstance();
-        $moduleDir = $front->getModuleDirectory($this->getModuleName());
+        $moduleName = strtolower($this->getModuleName());
 
-        $configFile = $moduleDir . "/module.ini";
+        $front = Zend_Controller_Front::getInstance();
+        $moduleDir = $front->getModuleDirectory($moduleName);
+
+        $configFile = $moduleDir . "/configs/module.ini";
 
         if (!file_exists($configFile)) return;
 
