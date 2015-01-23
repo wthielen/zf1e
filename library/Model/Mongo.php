@@ -186,13 +186,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         if (null === self::$resource) {
             $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
-            if (null === ($resource = $bootstrap->getPluginResource('Mongo'))) {
-                $bootstrap->registerPluginResource('Mongo');
-                $resource = $bootstrap->getPluginResource('Mongo');
-                $resource->init();
-            }
-
-            self::$resource = $resource;
+            self::$resource = $bootstrap->getPluginResource('Mongo');
         }
 
         return self::$resource;
