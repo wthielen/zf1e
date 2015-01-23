@@ -21,44 +21,54 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
         $this->locale = $bootstrap->getResource('locale');
         if (null === $this->locale) $this->locale = new Zend_Locale();
 
-        // Perform browser language detection and redirection if the main domain is accessed
         $options = $this->resource->getOptions();
-        $domain = $request->getHttpHost();
-        if ($domain === $options['domain']) {
-            $script = null;
-            $language = $this->locale->getLanguage();
+        $language = $this->getBrowserLanguage();
 
-            // Do something about languages with specific scripts
-            if ("zh" === $language) $script = $this->_detectChineseScript();
+        // If a domain is given, perform subdomain-based language detection
+        if (isset($options['domain'])) {
+            $domain = $request->getHttpHost();
 
-            if ($script) $language .= '_' . ucfirst(strtolower($script));
-
-            // Pick the first language as default if it is not listed as
-            // a supported language
-            if (!in_array($language, $options['languages'])) {
-                $language = $options['languages'][0];
+            // If the main domain is accessed, use the browser language and
+            // redirect to that subdomain
+            if ($domain === $options['domain']) {
+                // Perform 302 redirect
+                header('HTTP/1.1 302');
+                header('Location: ' . $this->composeUrl($language));
+                exit();
             }
 
-            // Perform 302 redirect
-            header('HTTP/1.1 302');
-            header('Location: ' . $this->composeUrl($language));
-            exit();
+            // Extract the language from the domain, and store it
+            $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
+            $parts = explode('-', $subdomain);
+            $language = $parts[0];
+            if (isset($parts[1])) $language .= '_' . ucfirst($parts[1]);
         }
 
-        // Extract the language from the domain, and store it
-        $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
-        $parts = explode('-', $subdomain);
-        $language = $parts[0];
-        if (isset($parts[1])) $language .= '_' . ucfirst($parts[1]);
+        // Store the language in the resource
+        $this->resource->setLanguage($language);
+
+        // Maybe do this in the application's bootstrap, after the language has been decided
+        // by other measures (logged-in user's language preference)
+        $this->resource->initTranslate();
+    }
+
+    public function getBrowserLanguage()
+    {
+        $script = null;
+        $options = $this->resource->getOptions();
+        $language = $this->locale->getLanguage();
+
+        // Do something about languages with specific scripts
+        if ("zh" === $language) $script = $this->_detectChineseScript();
+
+        if ($script) $language .= '_' . ucfirst(strtolower($script));
 
         // Pick the default language if the given language is not supported
         if (!in_array($language, $options['languages'])) {
             $language = $options['languages'][0];
         }
 
-        // Store the language in the resource
-        $this->resource->setLanguage($language);
-        $this->resource->initTranslate();
+        return $language;
     }
 
     /**
@@ -73,7 +83,11 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
 
         $subdomain = strtolower(str_replace('_', '-', $language));
         $proto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== "off" ? 'https' : 'http';
-        $url = $proto . "://" . $subdomain . "." . $options['domain'] . $path;
+
+        $url = $proto . "://" . $_SERVER['HTTP_HOST'] . $path;
+        if (isset($options['domain'])) {
+            $url = $proto . "://" . $subdomain . "." . $options['domain'] . $path;
+        }
 
         return $url;
     }

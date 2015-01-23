@@ -32,11 +32,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $options = $this->getOptions();
         if (null === $options) return null;
         
-        // Throw exceptions if 'domain' or 'languages' is missing from the options
-        if (!isset($options['domain'])) {
-            throw new Zend_Application_Resource_Exception('Please specify main domain: resources.multilanguage.domain');
-        }
-
+        // Throw exceptions if 'languages' is missing from the options
         if (!isset($options['languages']) || count($options['languages']) == 0) {
             throw new Zend_Application_Resource_Exception('Please specify one or more supported languages for your application: resources.multilanguage.languages[]');
         }
