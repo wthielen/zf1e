@@ -44,6 +44,13 @@ final class ZFE_Environment
         return $autoloader ? $autoloader->getNamespace() : '';
     }
 
+    public static function getModuleName()
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $request = $front->getRequest();
+
+        return $request->getParam('module');
+    }
     /**
      * Resource namespace/prefix
      *
