@@ -16,10 +16,21 @@ class ZFE_Model_Base
     // The language to use for __get and __set
     protected $_lang;
 
+    // Object status
+    protected $_status;
+    protected static $_defaultStatus = 0;
+
+    const STATUS_CLEAN = 0;
+    const STATUS_INITIALIZING = 1;
+    const STATUS_DIRTY = 2;
+    const STATUS_IMPORT = 3;
+
     public function __construct()
     {
         $this->_data = array();
         $this->_lang = ZFE_Core::getLanguage();
+
+        $this->_status = static::$_defaultStatus;
     }
 
     /**
@@ -113,7 +124,17 @@ class ZFE_Model_Base
     {
         $this->_data = array();
 
+        $this->_status = self::STATUS_INITIALIZING;
         foreach($data as $key => $val) $this->$key = $val;
+        $this->_status = self::STATUS_CLEAN;
+    }
+
+    /**
+     * Just a setting to tell the system not to track changed data
+     */
+    public static function prepareImport()
+    {
+        static::$_defaultStatus = self::STATUS_IMPORT;
     }
 
     /**

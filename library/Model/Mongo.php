@@ -28,6 +28,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     private $_refCache;
 
     /**
+     * Tracking what has been changed
+     *
+     * This is used by the save function to call on*Updated() functions.
+     */
+    protected $_changedFields = array();
+
+    /**
      * Mongo constructor, that calls the getDatabase() function, which in
      * turn initializes the Mongo application plugin resource.
      */
@@ -66,7 +73,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = $_val;
         }
 
+        $oldValue = $this->$key;
         parent::__set($key, $val);
+
+        if (!in_array($this->_status, array(self::STATUS_INITIALIZING, self::STATUS_IMPORT))) {
+            if ($oldValue !== $val) {
+                if (!isset($this->_changedFields[$key])) $this->_changedFields[$key] = array();
+                $this->_changedFields[$key][] = $oldValue;
+            }
+        }
     }
 
     /**
@@ -200,9 +215,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $whitelist = array(
             'count',
             'findOne',
+            'findAndModify',
             'remove',
             'drop',
-            'aggregate'
+            'aggregate',
+            'distinct'
         );
 
         if (!in_array($name, $whitelist)) {
@@ -306,6 +323,22 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         array_walk($args['query'], function(&$val, $key) use($replaceWithReference) {
             if ($key[0] == '$') return;
+
+            // Special case to take MongoIds out of references
+            if ($key == '_id' && is_array($val)) {
+                // If it is a single reference, take out the ID and continue
+                if (MongoDBRef::isRef($val)) {
+                    $val = $val['$id'];
+                    return;
+                }
+
+                // Create an $in operation with an array of IDs
+                $val = array('$in' => array_map(function($ref) {
+                    return MongoDBRef::isRef($ref) ? $ref['$id'] : null;
+                }, $val));
+
+                return;
+            }
 
             // Create a $in operation for multiple arguments to a query field
             if (is_array($val)) {
@@ -414,6 +447,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Remove from cache after saving
         $class = get_called_class();
         unset(self::$_cache[$class][$this->_data[static::$_identifierField]]);
+
+        // Run on*Updated functions on changed fields and clear it
+        foreach($this->_changedFields as $fld => $oldValue) {
+            $fn = ZFE_Util_String::toCamelCase("on-" . $fld . "-updated");
+            if (method_exists($this, $fn)) $this->$fn($oldValue);
+        }
+        $this->_changedFields = array();
     }
 
     /**
