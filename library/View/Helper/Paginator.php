@@ -20,19 +20,27 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
      */
     public function paginator($pageInfo, $options = array())
     {
-        $maxEntries = 11;
+        $default = array(
+            'maxEntries' => 11,
+            'inputField' => false
+        );
+
+        $options = array_merge($default, $options);
         $baseUrl = $this->view->url();
+
+        $ml = Zend_Registry::get('ZFE_MultiLanguage');
+        $useInput = $options['inputField'];
 
         // Some handy booleans
         $firstPage = $pageInfo['page'] == 1;
         $lastPage = $pageInfo['page'] == $pageInfo['pages'];
 
-        $halfPoint = floor($maxEntries / 2);
+        $halfPoint = floor($options['maxEntries'] / 2);
         $start = $pageInfo['page'] > $halfPoint ? $pageInfo['page'] - $halfPoint : 1;
-        $end = $start + $maxEntries - 1;
+        $end = $start + $options['maxEntries'] - 1;
 
         if ($end > $pageInfo['pages']) $end = $pageInfo['pages'];
-        if ($end - $start < $maxEntries) $start = max(1, $end - $maxEntries + 1);
+        if ($end - $start < $options['maxEntries']) $start = max(1, $end - $options['maxEntries'] + 1);
 
         $html = '<ul class="pagination"';
         foreach($options as $key => $val) $html .= " data-$key=\"$val\"";
@@ -51,25 +59,33 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
             $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] - 1) . '">&lt;</a>';
             $html .= '</li>';
 
-            if ($start > 1) $html .= '<li class="disabled"><span>...</span></li>';
+            if (!$useInput && $start > 1) $html .= '<li class="disabled"><span>...</span></li>';
         }
 
-        // Add the page number links, and make the current one active
-        for($page = $start; $page <= $end; $page++) {
-            $url = $baseUrl . '?' . http_build_query(array('p' => $page));
+        // Depending on the mode, add page number links, or add an input field
+        if ($options['inputField']) {
+            $len = strlen($pageInfo['pages']);
 
-            $cls = array();
-            if ($page == $pageInfo['page']) $cls[] = 'active';
+            $fld = '<input type="text" size="' . $len . '" maxlength="' . $len . '" value="' . $pageInfo['page'] . '" />';
+            $html .= '<li><span>' . $ml->_('PAGINATOR_X_OF_Y', array($fld, $pageInfo['pages'])) . '</span></li>';
+        } else {
+            // Add the page number links, and make the current one active
+            for($page = $start; $page <= $end; $page++) {
+                $url = $baseUrl . '?' . http_build_query(array('p' => $page));
 
-            $html .= '<li class="' . implode(' ', $cls) . '">';
-            $html .= '<a href="' . $url . '" data-page="' . $page . '">' . $page . '</a>';
-            $html .= '</li>';
+                $cls = array();
+                if ($page == $pageInfo['page']) $cls[] = 'active';
+
+                $html .= '<li class="' . implode(' ', $cls) . '">';
+                $html .= '<a href="' . $url . '" data-page="' . $page . '">' . $page . '</a>';
+                $html .= '</li>';
+            }
         }
 
         // If not on the last page, show the "go to next page" and "go to last
         // page" links.
         if (!$lastPage) {
-            if ($end < $pageInfo['pages']) $html .= '<li class="disabled"><span>...</span></li>';
+            if (!$useInput && $end < $pageInfo['pages']) $html .= '<li class="disabled"><span>...</span></li>';
 
             $html .= '<li class="next">';
             $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['page'] + 1));
