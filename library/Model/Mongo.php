@@ -193,6 +193,22 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
+     * A wrapper around execute() that will throw a PHP exception when something goes
+     * wrong here.
+     */
+    final public static function execute($code, $args = array())
+    {
+        $db = self::getDatabase();
+
+        $result = $db->execute($code, $args);
+        if ($result['ok'] == 0) {
+            throw new ZFE_Model_Mongo_Exception($result['errmsg'], $result['code']);
+        }
+
+        return $result['retval'];
+    }
+
+    /**
      * Registers the MongoDB application plugin resource and initializes it, when a
      * connection is requested. It stores the plugin resource as a static entry in
      * the model.
