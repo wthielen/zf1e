@@ -111,12 +111,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             return $obj;
         }
 
-        if ($val instanceof MongoDate) {
-            $val = new DateTime('@' . $val->sec);
-            $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
-            return $val;
-        }
+        if ($val instanceof MongoDate) $val = self::getDate($val);
 
+        return $val;
+    }
+
+    final public static function getDate(MongoDate $dt) 
+    {
+        $val = new DateTime('@' . $dt->sec);
+        $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
         return $val;
     }
 
@@ -249,6 +252,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             switch($name) {
             case 'findOne':
                 $ret = static::map($ret);
+                break;
+            case 'aggregate':
+                if ($ret['ok'] == 0) throw new ZFE_Model_Mongo_Exception($ret['errmsg'], $ret['code']);
+                $ret = $ret['result'];
                 break;
             }
         }
