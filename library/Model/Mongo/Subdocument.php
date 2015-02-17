@@ -32,6 +32,10 @@ class ZFE_Model_Mongo_Subdocument extends ZFE_Model_Base
         $this->_refCache = array();
 
         self::getDatabase();
+
+        // Sets an ID for the subdocument so we have something to
+        // refer to it with.
+        $this->_data['id'] = new MongoId();
     }
 
     /**
