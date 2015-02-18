@@ -46,9 +46,11 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
 
         // Store the language in the resource
         $this->resource->setLanguage($language);
+    }
 
-        // Maybe do this in the application's bootstrap, after the language has been decided
-        // by other measures (logged-in user's language preference)
+    public function preDispatch(Zend_Controller_Request_Abstract $request)
+    {
+        // Init the translation resources
         $this->resource->initTranslate();
     }
 

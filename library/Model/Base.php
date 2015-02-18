@@ -169,6 +169,17 @@ class ZFE_Model_Base
         return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
     }
 
+    public function getTranslations($key)
+    {
+        if (!isset($this->_data[$key])) return null;
+
+        if (!in_array($key, static::$translations)) {
+            throw new Exception($key . " is not a translated field.");
+        }
+
+        return $this->_data[$key];
+    }
+
     public static function getTranslatedFields()
     {
         return static::$translations;
