@@ -42,11 +42,11 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      *
      * @return array
      */
-    public function getLanguages()
+    public function getLanguages($translated = false)
     {
         if (null === $this->resource) return array();
 
-        return $this->resource->getLanguages();
+        return $this->resource->getLanguages($translated);
     }
 
     /**
@@ -130,7 +130,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      */
     protected function _typeSelect()
     {
-        $languages = $this->resource->getLanguages();
+        $languages = $this->resource->getLanguages(true);
         $language = $this->resource->getLanguage();
 
         $html = '<select class="zfe_multilanguage">';
@@ -154,7 +154,7 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
      */
     protected function _typeList()
     {
-        $languages = $this->resource->getLanguages();
+        $languages = $this->resource->getLanguages(true);
         $language = $this->resource->getLanguage();
 
         $html = '<ul class="zfe_multilanguage">';

@@ -41,7 +41,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         $bootstrap = $this->getBootstrap();
         $bootstrap->bootstrap('frontController');
         $front = $bootstrap->getResource('frontController');
-        $front->registerPlugin(new ZFE_Plugin_Multilanguage());
+        $front->registerPlugin(new ZFE_Plugin_Multilanguage(), 500);
 
         Zend_Registry::set('ZFE_MultiLanguage', $this);
     }
@@ -112,7 +112,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      * Returns a list of languages, with their names in their respective 
      * languages
      */
-    public function getLanguages()
+    public function getLanguages($translated = false)
     {
         $options = $this->getOptions();
 
@@ -120,7 +120,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         if (@is_array($options['languages'])) {
             foreach($options['languages'] as $lang) {
                 try {
-                    $str = Zend_Locale_Data::getContent($lang, 'language', $lang);
+                    $str = Zend_Locale_Data::getContent($translated ? $lang : $this->language, 'language', $lang);
                     $first = mb_strtoupper(mb_substr($str, 0, 1));
                     $ret[$lang] = $first . mb_substr($str, 1);
                 } catch (Exception $e) {
