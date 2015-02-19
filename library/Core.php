@@ -50,7 +50,12 @@ abstract class ZFE_Core
      */
     public static function getBrowser() {
         if (is_null(self::$browserinfo)) {
-            self::$browserinfo = @get_browser();
+            if (!isset($_SESSION['browserinfo'])) {
+                $info = @get_browser();
+                $_SESSION['browserinfo'] = $info;
+            }
+
+            self::$browserinfo = $_SESSION['browserinfo'];
         }
 
         return self::$browserinfo;
