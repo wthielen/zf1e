@@ -461,6 +461,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             );
         }
 
+        // Remove from model if value is null
+        foreach($data as $key => $val) {
+            if (is_null($val)) unset($data[$key]);
+        }
+
         $collection->save($data);
 
         $this->_id = $data['_id'];
