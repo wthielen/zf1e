@@ -22,13 +22,13 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
     {
         $default = array(
             'maxEntries' => 11,
-            'inputField' => false
+            'inputField' => false,
+            'x_of_y_text' => 'Page %d of %d'
         );
 
         $options = array_merge($default, $options);
         $baseUrl = $this->view->url();
 
-        $ml = Zend_Registry::get('ZFE_MultiLanguage');
         $useInput = $options['inputField'];
 
         // Some handy booleans
@@ -67,7 +67,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
             $len = strlen($pageInfo['pages']);
 
             $fld = '<input type="text" size="' . $len . '" maxlength="' . $len . '" value="' . $pageInfo['page'] . '" />';
-            $html .= '<li><span>' . $ml->_('PAGINATOR_X_OF_Y', array($fld, $pageInfo['pages'])) . '</span></li>';
+            $html .= '<li><span>' . vsprintf($options['x_of_y_text'], array($fld, $pageInfo['pages'])) . '</span></li>';
         } else {
             // Add the page number links, and make the current one active
             for($page = $start; $page <= $end; $page++) {
