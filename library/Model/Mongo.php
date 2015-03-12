@@ -98,9 +98,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function __get($key)
     {
-        if (!isset($this->_data[$key])) return null;
-
         $val = parent::__get($key);
+
+        if (is_null($val) && !isset($this->_data[$key])) return null;
 
         if (MongoDBRef::isRef($val)) {
             if (isset($this->_refCache[$key])) return $this->_refCache[$key];

@@ -39,12 +39,14 @@ class ZFE_Model_Base
      */
     public function __set($key, $val)
     {
-        // Check if a user-defined setter method exists,
-        // and use that immediately, returning early
-        $setter = "_" . ZFE_Util_String::toCamelCase("set_" . strtolower($key));
-        if (method_exists($this, $setter)) {
-            $this->$setter($val);
-            return;
+        if ($this->_status == self::STATUS_CLEAN) {
+            // Check if a user-defined setter method exists,
+            // and use that immediately, returning early
+            $setter = "_" . ZFE_Util_String::toCamelCase("set_" . strtolower($key));
+            if (method_exists($this, $setter)) {
+                $this->$setter($val);
+                return;
+            }
         }
 
         // Check the simple case, set it and return immediately
@@ -111,9 +113,21 @@ class ZFE_Model_Base
         return isset($this->_data[$key]);
     }
 
-    public function toArray()
+    /**
+     * Returns original values of the requested keys
+     * Allows to get computed values if the requested key is a computed
+     * value, i.e. there is a _get<key>() function.
+     */
+    public function toArray($keys = null)
     {
-        return $this->_data;
+        if (is_null($keys)) return $this->_data;
+
+        $ret = array();
+        foreach($keys as $key) {
+            $ret[$key] = isset($this->_data[$key]) ? $this->_data[$key] : $this->$key;
+        }
+
+        return $ret;
     }
 
     /**
