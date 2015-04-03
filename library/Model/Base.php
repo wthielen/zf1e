@@ -34,6 +34,15 @@ class ZFE_Model_Base
     }
 
     /**
+     * When unserializing a cached object, reset the language
+     * to the interface language
+     */
+    public function __wakeup()
+    {
+        $this->_lang = ZFE_Core::getLanguage();
+    }
+
+    /**
      * The magic setter. It checks for the specific setter function,
      * and whether the given key is a translated entry.
      */
@@ -124,7 +133,7 @@ class ZFE_Model_Base
 
         $ret = array();
         foreach($keys as $key) {
-            $ret[$key] = isset($this->_data[$key]) ? $this->_data[$key] : $this->$key;
+            $ret[$key] = isset($this->_data[$key]) ? $this->getTranslation($key) : $this->$key;
         }
 
         return $ret;
@@ -174,12 +183,13 @@ class ZFE_Model_Base
      *
      * It returns null if the key is not specified for the given language.
      */
-    public function getTranslation($key, $lang)
+    public function getTranslation($key, $lang = null)
     {
         if (!isset($this->_data[$key])) return null;
 
         if (!in_array($key, static::$translations)) return $this->$key;
 
+        $lang = is_null($lang) ? ZFE_Core::getLanguage() : $lang;
         return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
     }
 

@@ -116,6 +116,24 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $val;
     }
 
+    /**
+     */
+    public function toArray($keys = null)
+    {
+        if (is_null($keys)) $keys = array_keys($this->_data);
+
+        $ret = array();
+        foreach($keys as $key) {
+            $val = isset($this->_data[$key]) ? $this->getTranslation($key) : $this->$key;
+
+            if ($val instanceof ZFE_Model_Mongo) $val = $val->toArray();
+
+            $ret[$key] = $val;
+        }
+
+        return $ret;
+    }
+
     final public static function getDate(MongoDate $dt) 
     {
         $val = new DateTime('@' . $dt->sec);
@@ -156,7 +174,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         parent::setTranslation($key, $val, $lang);
     }
 
-    public function getTranslation($key, $lang)
+    public function getTranslation($key, $lang = null)
     {
         $translation = parent::getTranslation($key, $lang);
 
