@@ -117,8 +117,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
+     * Converts the object into an array.
+     *
+     * It will convert sub-objects as well, up to $levels levels.
+     *
+     * Do not allow for full sub-object conversion because this will likely end up
+     * in a deadlock or a memory overflow. Best to pass a $levels argument to keep
+     * it controlled.
      */
-    public function toArray($keys = null)
+    public function toArray($keys = null, $levels = 0)
     {
         if (is_null($keys)) $keys = array_keys($this->_data);
 
@@ -126,7 +133,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         foreach($keys as $key) {
             $val = isset($this->_data[$key]) ? $this->getTranslation($key) : $this->$key;
 
-            if ($val instanceof ZFE_Model_Mongo) $val = $val->toArray();
+            if ($levels > 0) {
+                if ($val instanceof ZFE_Model_Mongo) $val = $val->toArray(null, $levels - 1);
+
+                if (is_array($val)) {
+                    foreach($val as &$v) {
+                        if ($v instanceof ZFE_Model_Mongo) $v = $v->toArray(null, $levels - 1);
+                    }
+                }
+            }
 
             $ret[$key] = $val;
         }
