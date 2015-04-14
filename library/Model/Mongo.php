@@ -117,6 +117,50 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
+     * Simulates a sequence generator as found in Oracle, and
+     * MySQL's AUTO_INCREMENT.
+     */
+    public static function getNextId()
+    {
+        $sequenceCollection = self::getDatabase()->sequences;
+
+        $nextIdRecord = $sequenceCollection->findAndModify(array(),
+            array(
+                '$inc' => array(static::$collection => 1)
+            ),
+            array(static::$collection => 1)
+        );
+
+        // This collection is not sequenced yet. Check if there are already entries
+        // (from an import, e.g.) and take the maximum ID value from the collection,
+        // add 1, and store it in the sequences collection.
+        //
+        // CAVEAT: this is not atomic!
+        if (is_null($nextIdRecord)) {
+            $pipeline = array(
+                '$group' => array(
+                    '_id' => "",
+                    'max' => array('$max' => '$' . static::$_identifierField)
+                )
+            );
+            $max = static::getCollection()->aggregate($pipeline);
+
+            $nextId = $max['result'][0]['max'] + 1;
+            $sequenceCollection->findAndModify(array(),
+                array(
+                    '$set' => array(static::$collection => $nextId)
+                ),
+                array(),
+                array('upsert' => true)
+            );
+        } else {
+            $nextId = $nextIdRecord[static::$collection] + 1;
+        }
+
+        return $nextId;
+    }
+
+    /**
      * Converts the object into an array.
      *
      * It will convert sub-objects as well, up to $levels levels.
