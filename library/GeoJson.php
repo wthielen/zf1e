@@ -2,6 +2,9 @@
 
 class ZFE_GeoJson
 {
+    const TYPE_POINT = "Point";
+    const TYPE_MULTIPOINT = "MultiPoint";
+
     private $type;
 
     private $coords;

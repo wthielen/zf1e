@@ -143,9 +143,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                     'max' => array('$max' => '$' . static::$_identifierField)
                 )
             );
-            $max = static::getCollection()->aggregate($pipeline);
+            $max = static::aggregate($pipeline);
 
-            $nextId = $max['result'][0]['max'] + 1;
+            $nextId = $max[0]['max'] + 1;
             $sequenceCollection->findAndModify(array(),
                 array(
                     '$set' => array(static::$collection => $nextId)
@@ -158,6 +158,22 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         return $nextId;
+    }
+
+    public static function getMaximum($field, $filter = array())
+    {
+        $pipeline = array();
+        if (!empty($filter)) $pipeline[] = array('$match' => $filter);
+
+        $pipeline[] = array('$group' => array(
+            '_id' => "",
+            'max' => array('$max' => '$' . $field)
+        ));
+
+        $max = static::aggregate($pipeline);
+        $value = count($max) ? $max[0]['max'] : null;
+
+        return $value;
     }
 
     /**
