@@ -62,6 +62,17 @@ abstract class ZFE_Core
     }
 
     /**
+     * Checks if the given URL is on the same domain as us.
+     */
+    public static function sameDomain($url)
+    {
+        $domain = $_SERVER['HTTP_HOST'];
+        $urlDomain = parse_url($url, PHP_URL_HOST);
+
+        return $domain == $urlDomain;
+    }
+
+    /**
      * Dump the given variables. If the DebugFilter resource is enabled,
      * it will check the client's IP address and eventually the user agent
      * against the allowed values, before dumping the variables. If not
