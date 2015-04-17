@@ -23,7 +23,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         $default = array(
             'maxEntries' => 11,
             'inputField' => false,
-            'x_of_y_text' => 'Page %d of %d'
+            'x_of_y_text' => 'Page %s of %d'
         );
 
         $options = array_merge($default, $options);
@@ -42,9 +42,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         if ($end > $pageInfo['pages']) $end = $pageInfo['pages'];
         if ($end - $start < $options['maxEntries']) $start = max(1, $end - $options['maxEntries'] + 1);
 
-        $html = '<ul class="pagination"';
-        foreach($options as $key => $val) $html .= " data-$key=\"$val\"";
-        $html .= '>';
+        $html = '<ul class="pagination">';
 
         // If not on the first page, show the "go to first page" and the "go to
         // previous page" links.
@@ -63,7 +61,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         }
 
         // Depending on the mode, add page number links, or add an input field
-        if ($options['inputField']) {
+        if ($useInput) {
             $len = strlen($pageInfo['pages']);
 
             $fld = '<input type="text" size="' . $len . '" maxlength="' . $len . '" value="' . $pageInfo['page'] . '" />';
