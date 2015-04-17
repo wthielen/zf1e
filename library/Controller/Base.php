@@ -39,10 +39,17 @@ class ZFE_Controller_Base extends Zend_Controller_Action
 
         // Automatically add CSS and JS
         $cssFiles = array('default.css', $controller . '.css', $controller . '/' . $action . '.css');
+        $cssPrintFiles = array('default.print.css', $controller . '.print.css', $controller . '/' . $action . '.print.css');
+
         $headLink = $this->view->headLink();
         foreach($cssFiles as $file) {
             if (!Zend_Loader::isReadable(ZFE_Environment::getFilePath('/css/' . $file))) continue;
-            $headLink->appendStylesheet('/css/' . $file);
+            $headLink->appendStylesheet('/css/' . $file, 'screen, print');
+        }
+
+        foreach($cssPrintFiles as $file) {
+            if (!Zend_Loader::isReadable(ZFE_Environment::getFilePath('/css/' . $file))) continue;
+            $headLink->appendStylesheet('/css/' . $file, 'print');
         }
 
         $jsFiles = array('default.js', $controller . '.js', $controller . '/' . $action . '.js');
