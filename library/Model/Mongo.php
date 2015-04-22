@@ -119,6 +119,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Simulates a sequence generator as found in Oracle, and
      * MySQL's AUTO_INCREMENT.
+     *
+     * CAVEAT: when you import data into MongoDB, make sure the
+     * ID sequence is set for that collection in your import script!
      */
     public static function getNextId()
     {
@@ -128,38 +131,16 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             array(
                 '$inc' => array(static::$collection => 1)
             ),
-            array(static::$collection => 1)
+            array(static::$collection => 1),
+            array('upsert' => true, 'new' => true)
         );
 
-        // This collection is not sequenced yet. Check if there are already entries
-        // (from an import, e.g.) and take the maximum ID value from the collection,
-        // add 1, and store it in the sequences collection.
-        //
-        // CAVEAT: this is not atomic!
-        if (is_null($nextIdRecord)) {
-            $pipeline = array(
-                '$group' => array(
-                    '_id' => "",
-                    'max' => array('$max' => '$' . static::$_identifierField)
-                )
-            );
-            $max = static::aggregate($pipeline);
-
-            $nextId = $max[0]['max'] + 1;
-            $sequenceCollection->findAndModify(array(),
-                array(
-                    '$set' => array(static::$collection => $nextId)
-                ),
-                array(),
-                array('upsert' => true)
-            );
-        } else {
-            $nextId = $nextIdRecord[static::$collection] + 1;
-        }
-
-        return $nextId;
+        return $nextIdRecord[static::$collection];
     }
 
+    /**
+     * Gets the maximum value of a field
+     */
     public static function getMaximum($field, $filter = array())
     {
         $pipeline = array();

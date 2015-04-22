@@ -189,7 +189,7 @@ class ZFE_Model_Base
 
         if (!in_array($key, static::$translations)) return $this->$key;
 
-        $lang = is_null($lang) ? ZFE_Core::getLanguage() : $lang;
+        $lang = is_null($lang) ? $this->_lang : $lang;
         return isset($this->_data[$key][$lang]) ? $this->_data[$key][$lang] : null;
     }
 
