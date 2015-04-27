@@ -44,7 +44,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         $this->_refCache = array();
 
-        self::getDatabase();
+        static::getDatabase();
     }
 
     /**
@@ -125,7 +125,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public static function getNextId()
     {
-        $sequenceCollection = self::getDatabase()->sequences;
+        $sequenceCollection = static::getDatabase()->sequences;
 
         $nextIdRecord = $sequenceCollection->findAndModify(array(),
             array(
@@ -209,7 +209,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $obj = $cls::map(MongoDBRef::get(self::getDatabase(), $ref));
+            $obj = $cls::map(MongoDBRef::get(static::getDatabase(), $ref));
         }
 
         return $obj;
@@ -246,12 +246,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
         }
 
-        return self::getDatabase()->{static::$collection};
+        return static::getDatabase()->{static::$collection};
     }
 
     final public static function getGridFS()
     {
-        return self::getDatabase()->getGridFS(static::$collection);
+        return static::getDatabase()->getGridFS(static::$collection);
     }
 
     /**
@@ -262,11 +262,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     final public static function getDatabase()
     {
-        if (null === self::$db) {
-            self::$db = self::getResource()->getDatabase();
+        if (null === static::$db) {
+            static::$db = static::getResource()->getDatabase();
         }
 
-        return self::$db;
+        return static::$db;
     }
 
     /**
@@ -275,7 +275,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     final public static function execute($code, $args = array())
     {
-        $db = self::getDatabase();
+        $db = static::getDatabase();
 
         $result = $db->execute($code, $args);
         if ($result['ok'] == 0) {
@@ -360,7 +360,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         if (is_array($id)) {
             $toFetch = array_values(array_diff($id, array_keys(self::$_cache[$class])));
             if (count($toFetch)) {
-                $fetched = self::find(array('query' => array($field => $toFetch)));
+                $fetched = static::find(array('query' => array($field => $toFetch)));
 
                 foreach($fetched['result'] as $entry) {
                     self::$_cache[$class][$entry->getIdentifier()] = $entry;
@@ -374,7 +374,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Simply fetch it from the database and store it in the cache if
         // it is not already stored in the cache, and then return from cache.
         if (!isset(self::$_cache[$class][$id])) {
-            self::$_cache[$class][$id] = self::findOne(array($field => $id));
+            self::$_cache[$class][$id] = static::findOne(array($field => $id));
         }
 
         return self::$_cache[$class][$id];
