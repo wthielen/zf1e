@@ -31,6 +31,18 @@
  */
 abstract class ZFE_Enum_Abstract
 {
+    public static function exists($val)
+    {
+        return in_array($val, static::getKeys());
+    }
+
+    public static function getKeys()
+    {
+        $reflection = new ReflectionClass(get_called_class());
+
+        return $reflection->getConstants();
+    }
+
     public static function getValues()
     {
         $reflection = new ReflectionClass(get_called_class());
