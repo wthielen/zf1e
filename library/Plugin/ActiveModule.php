@@ -21,6 +21,8 @@ class ZFE_Plugin_ActiveModule extends Zend_Controller_Plugin_Abstract
 {
     public function routeShutdown(Zend_Controller_Request_Abstract $request)
     {
+        $this->_switchErrorHandler($request);
+
         $activeModule = $request->getModuleName();
         $activeBootstrap = $this->_getActiveBootstrap($activeModule);
 
@@ -40,5 +42,28 @@ class ZFE_Plugin_ActiveModule extends Zend_Controller_Plugin_Abstract
         $moduleList = $bootstrap->getResource('modules');
 
         return isset($moduleList[$name]) ? $moduleList[$name] : null;
+    }
+
+    /**
+     * Switch error handler based on currently active module
+     *
+     * Source: http://stackoverflow.com/a/2720316/2038785
+     */
+    protected function _switchErrorHandler($request)
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $activeModule = $request->getModuleName();
+
+        $error = $front->getPlugin('Zend_Controller_Plugin_ErrorHandler');
+        if (!($error instanceof Zend_Controller_Plugin_ErrorHandler)) return;
+
+        $testRequest = new Zend_Controller_Request_Http();
+        $testRequest->setModuleName($activeModule)
+            ->setControllerName($error->getErrorHandlerController())
+            ->setActionName($error->getErrorHandlerAction());
+
+        if ($front->getDispatcher()->isDispatchable($testRequest)) {
+            $error->setErrorHandlerModule($activeModule);
+        }
     }
 }
