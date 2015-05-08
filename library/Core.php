@@ -72,6 +72,15 @@ abstract class ZFE_Core
         return $domain == $urlDomain;
     }
 
+    public static function getFullUrl($path)
+    {
+        $domain = $_SERVER['HTTP_HOST'];
+        $https = isset($_SERVER['HTTPS']) && !empty($_SERVER['HTTPS']);
+        $proto = $https ? 'https://' : 'http://';
+
+        return $proto . $domain . $path;
+    }
+
     /**
      * Dump the given variables. If the DebugFilter resource is enabled,
      * it will check the client's IP address and eventually the user agent

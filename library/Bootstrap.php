@@ -35,8 +35,8 @@ class ZFE_Bootstrap
         );
 
         // Load the ZFE_Plugin_ActiveModule plugin
-        self::$bootstrap->bootstrap('frontController');
-        $front = self::$bootstrap->getResource('frontController');
+        self::$bootstrap->bootstrap('FrontController');
+        $front = self::$bootstrap->getResource('FrontController');
         $front->registerPlugin(new ZFE_Plugin_ActiveModule());
     }
 }
