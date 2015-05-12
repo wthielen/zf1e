@@ -16,7 +16,7 @@ require_once 'Zend/Cache/Backend.php';
  * @subpackage Zend_Cache_Backend
  * @copyright  Starfish
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @url        https://github.com/linqia/ZFE_Cache_Backend_Redis
+ * @url        https://github.com/linqia/Zend_Cache_Backend_Redis
  */
 class ZFE_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_Backend_ExtendedInterface
 {
