@@ -39,8 +39,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
         // Register Multilanguage plugin
         $bootstrap = $this->getBootstrap();
-        $bootstrap->bootstrap('frontController');
-        $front = $bootstrap->getResource('frontController');
+        $bootstrap->bootstrap('FrontController');
+        $front = $bootstrap->getResource('FrontController');
         $front->registerPlugin(new ZFE_Plugin_Multilanguage(), 500);
 
         Zend_Registry::set('ZFE_MultiLanguage', $this);
