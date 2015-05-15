@@ -51,6 +51,7 @@ final class ZFE_Environment
 
         return $request->getParam('module');
     }
+
     /**
      * Resource namespace/prefix
      *
@@ -68,6 +69,12 @@ final class ZFE_Environment
 
         $resourceTypes = $autoloader->getResourceTypes();
         return $resourceTypes[$type]['namespace'];
+    }
+
+    public static function getModulePath()
+    {
+        $front = Zend_Controller_Front::getInstance();
+        return $front->getModuleDirectory(self::getModuleName());
     }
 
     public static function getLibraryPath()

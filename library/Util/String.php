@@ -137,4 +137,17 @@ abstract class ZFE_Util_String
         return $ret;
     }
 
+    public static function fromCamelCase($str, $replacement = '-')
+    {
+        $ret = '';
+
+        $len = strlen($str);
+        for($i = 0; $i < $len; $i++) {
+            if ($i && ctype_upper($str[$i])) $ret .= $replacement;
+
+            $ret .= strtolower($str[$i]);
+        }
+
+        return $ret;
+    }
 }
