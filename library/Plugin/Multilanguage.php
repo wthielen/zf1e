@@ -45,13 +45,8 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
         }
 
         // Store the language in the resource
+        // This also initializes the translation resource
         $this->resource->setLanguage($language);
-    }
-
-    public function preDispatch(Zend_Controller_Request_Abstract $request)
-    {
-        // Init the translation resources
-        $this->resource->initTranslate();
     }
 
     public function getBrowserLanguage()
