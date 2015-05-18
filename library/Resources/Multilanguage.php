@@ -113,7 +113,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      * Returns a list of languages, with their names in their respective 
      * languages
      */
-    public function getLanguages($target = false)
+    public function getLanguages($translate = false)
     {
         $options = $this->getOptions();
 
@@ -121,8 +121,11 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         if (@is_array($options['languages'])) {
             foreach($options['languages'] as $lang) {
                 try {
-                    if (is_bool($target)) $target = $target ? $lang : $this->language;
-
+                    if (is_bool($translate)) {
+                        $target = $translate ? $lang : $this->language;
+                    } else {
+                        $target = $translate;
+                    }
                     $str = Zend_Locale_Data::getContent($target, 'language', $lang);
                     $first = mb_strtoupper(mb_substr($str, 0, 1));
                     $ret[$lang] = $first . mb_substr($str, 1);
