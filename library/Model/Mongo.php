@@ -559,6 +559,14 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
+     * Removes the data associated with this object, from the Mongo collection
+     */
+    public function delete()
+    {
+        static::remove(array('_id' => $this->_id), array('justOne' => true));
+    }
+
+    /**
      * Creates a reference of this instance to be used in another instance
      *
      * If there is no _id entry in this instance, we save this instance into
