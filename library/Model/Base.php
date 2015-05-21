@@ -153,6 +153,17 @@ class ZFE_Model_Base
     }
 
     /**
+     * A static function that does the same as init()
+     */
+    public static function map($data)
+    {
+        $obj = new static();
+        $obj->init($data);
+
+        return $obj;
+    }
+
+    /**
      * Just a setting to tell the system not to track changed data
      */
     public static function prepareImport()
