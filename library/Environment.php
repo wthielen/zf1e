@@ -46,6 +46,8 @@ final class ZFE_Environment
 
     public static function getModuleName()
     {
+        if (php_sapi_name() == 'cli') return 'default';
+
         $front = Zend_Controller_Front::getInstance();
         $request = $front->getRequest();
 
