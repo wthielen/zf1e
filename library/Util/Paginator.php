@@ -86,8 +86,8 @@ final class ZFE_Util_Paginator
      */
     protected function recalculate()
     {
-        // Round up to the next whole number
-        $this->pages = intval(ceil(1.0 * $this->totalItems / $this->itemsPerPage));
+        // Round up to the next whole number, at least 1
+        $this->pages = max(1, intval(ceil(1.0 * $this->totalItems / $this->itemsPerPage)));
 
         if ($this->page > $this->pages) {
             $this->page = $this->pages;
