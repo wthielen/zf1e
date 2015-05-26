@@ -6,6 +6,7 @@
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
     protected $_id;
+    protected $_isPersistable = true;
 
     protected static $resource;
     protected static $db;
@@ -185,6 +186,18 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
 
             $ret[$key] = $val;
+        }
+
+        return $ret;
+    }
+
+    public function toSubdocument()
+    {
+        $ret = $this->_data;
+
+        foreach($ret as $key => $val) {
+            if ($val instanceof ZFE_Model_Mongo) $ret[$key] = $val->getReference();
+            if ($val instanceof DateTime) $ret[$key] = new MongoDate($val->getTimestamp());
         }
 
         return $ret;
@@ -524,6 +537,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function save()
     {
+        if (!$this->_isPersistable) {
+            throw new ZFE_Model_Mongo_Exception("Can not save a non-persistable instance");
+        }
+
         $collection = static::getCollection();
 
         $data = $this->_data;

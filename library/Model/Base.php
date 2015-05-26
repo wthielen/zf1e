@@ -149,7 +149,7 @@ class ZFE_Model_Base
 
         $this->_status = self::STATUS_INITIALIZING;
         foreach($data as $key => $val) $this->$key = $val;
-        $this->_status = self::STATUS_CLEAN;
+        $this->_status = self::$_defaultStatus;
     }
 
     /**
