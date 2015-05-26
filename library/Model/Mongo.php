@@ -222,7 +222,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 );
             }
 
-            $obj = $cls::map(MongoDBRef::get(static::getDatabase(), $ref));
+            $obj = MongoDBRef::get(static::getDatabase(), $ref);
+            $obj = is_null($obj) ? $obj : $cls::map($obj);
         }
 
         return $obj;
