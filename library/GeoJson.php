@@ -15,6 +15,14 @@ class ZFE_GeoJson
         $this->type = $type;
     }
 
+    public static function create($arr)
+    {
+        $obj = new static($arr['type']);
+        $obj->setCoordinates($arr['coordinates'][1], $arr['coordinates'][0]);
+
+        return $obj;
+    }
+
     public function setCoordinates($latitude, $longitude)
     {
         $this->coords = array(floatval($longitude), floatval($latitude));
@@ -40,6 +48,14 @@ class ZFE_GeoJson
             'type' => $this->type,
             'coordinates' => $this->coords
         );
+    }
+
+    /**
+     * Only works if it is a point.
+     */
+    public function toLatLng()
+    {
+        return implode(",", array_reverse($this->coords));
     }
 
     public function getJson()

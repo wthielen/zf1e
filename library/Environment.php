@@ -99,4 +99,9 @@ final class ZFE_Environment
     {
         return strpos(APPLICATION_ENV, 'development') !== false;
     }
+
+    public static function isProduction()
+    {
+        return strpos(APPLICATION_ENV, 'production') !== false;
+    }
 }
