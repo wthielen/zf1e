@@ -28,6 +28,11 @@ class ZFE_GeoJson
         $this->coords = array(floatval($longitude), floatval($latitude));
     }
 
+    public function getCoordinates()
+    {
+        return array($this->getLatitude(), $this->getLongitude());
+    }
+
     public function getLatitude()
     {
         if (!is_array($this->coords)) return self::$_default[1];
