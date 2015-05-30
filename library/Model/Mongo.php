@@ -445,7 +445,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
                 // Create an $in operation with an array of IDs
                 $val = array('$in' => array_map(function($ref) {
-                    return MongoDBRef::isRef($ref) ? $ref['$id'] : null;
+                    return MongoDBRef::isRef($ref) ? $ref['$id'] : $ref;
                 }, $val));
 
                 return;
