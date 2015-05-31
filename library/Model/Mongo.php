@@ -522,7 +522,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $ret;
     }
 
-    public static function count($query)
+    public static function count($query = array())
     {
         $query = static::_convertQuery($query);
         return static::getCollection()->count($query);
