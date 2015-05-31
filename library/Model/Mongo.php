@@ -74,14 +74,16 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = $_val;
         }
 
-        $oldValue = $this->$key;
+        $doCompare = !in_array($this->_status, array(self::STATUS_INITIALIZING, self::STATUS_IMPORT));
+
+        // Do not use $this->$key here because $val is already translated so we don't need
+        // back-translate from $this::__get
+        if ($doCompare) $oldValue = parent::__get($key);
         parent::__set($key, $val);
 
-        if (!in_array($this->_status, array(self::STATUS_INITIALIZING, self::STATUS_IMPORT))) {
-            if ($oldValue !== $val) {
-                if (!isset($this->_changedFields[$key])) $this->_changedFields[$key] = array();
-                $this->_changedFields[$key][] = $oldValue;
-            }
+        if ($doCompare && $oldValue !== $val) {
+            if (!isset($this->_changedFields[$key])) $this->_changedFields[$key] = array();
+            $this->_changedFields[$key][] = $oldValue;
         }
     }
 
@@ -569,9 +571,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         unset(self::$_cache[$class][$this->_data[static::$_identifierField]]);
 
         // Run on*Updated functions on changed fields and clear it
-        foreach($this->_changedFields as $fld => $oldValue) {
+        foreach($this->_changedFields as $fld => $oldValues) {
             $fn = ZFE_Util_String::toCamelCase("on-" . $fld . "-updated");
-            if (method_exists($this, $fn)) $this->$fn($oldValue);
+            if (method_exists($this, $fn)) $this->$fn($oldValues);
         }
         $this->_changedFields = array();
     }

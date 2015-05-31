@@ -82,6 +82,35 @@ abstract class ZFE_Core
     }
 
     /**
+     * A convenience function to wrap cache loading/saving. The $fn function
+     * needs to be a lambda function that does not accept any arguments. If you
+     * need to pass scope variables into the function, use:
+     * function() use ($var1, $var2) { ... }
+     *
+     * Example call:
+     * ZFE_Core::cache("result_of_heavy_calc", function() use ($x, $y) {
+     *     // Do something heavy with $x and $y
+     *     $ret = ... $x ... $y ...;
+     *
+     *     return $ret;
+     * }, 3600);
+     *
+     * To bypass the cache, set the fourth parameter to be true.
+     */
+    public static function cache($cache_id, $fn, $expire = null, $bypass = false)
+    {
+        $cache = Zend_Registry::get('Zend_Cache');
+        if (is_null($cache) || $bypass) return $fn();
+
+        if (($ret = $cache->load($cache_id)) === false) {
+            $ret = $fn();
+            $cache->save($ret, $cache_id, array(), $expire);
+        }
+
+        return $ret;
+    }
+
+    /**
      * Dump the given variables. If the DebugFilter resource is enabled,
      * it will check the client's IP address and eventually the user agent
      * against the allowed values, before dumping the variables. If not
