@@ -117,24 +117,19 @@ abstract class ZFE_Util_String
      * The rules are simple. The first character is lowercase.
      * Every underscore, period or dash is a sign that the
      * next character should be capitalized.
+     *
+     * Optimized version. Reference:
+     * http://www.mendoweb.be/blog/php-convert-string-to-camelcase-string/
      */
     public static function toCamelCase($str, $delim = array('-', '_', '.'))
     {
         $ret = '';
 
-        $len = strlen($str);
-        $doUpper = false;
-        for($i = 0; $i < $len; $i++) {
-            if (in_array($str[$i], $delim)) {
-                $doUpper = true;
-                continue;
-            }
+        $str = trim(str_replace($delim, ' ', $str));
+        $str = ucwords($str);
+        $str = lcfirst(str_replace(' ', '', $str));
 
-            $ret .= $doUpper ? strtoupper($str[$i]) : strtolower($str[$i]);
-            $doUpper = false;
-        }
-
-        return $ret;
+        return $str;
     }
 
     public static function fromCamelCase($str, $replacement = '-')
