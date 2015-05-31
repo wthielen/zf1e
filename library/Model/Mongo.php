@@ -322,7 +322,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     public static function __callStatic($name, $args)
     {
         $whitelist = array(
-            'count',
             'findOne',
             'findAndModify',
             'remove',
@@ -419,22 +418,14 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $this->_id;
     }
 
-    /**
-     * To be able to paginate results, I have taken out the 'find' call and made it
-     * its own function. It returns an array containing the result set, and the
-     * total number of results, useful for pagination
-     */
-    public static function find($args = array())
+    protected static function _convertQuery($query)
     {
-        $default = array('query' => array(), 'fields' => array());
-        $args = array_merge($default, $args);
-
         // Replace ZFE_Model_Mongo instances by their references
         $replaceWithReference = function(&$val) {
             $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
         };
 
-        array_walk($args['query'], function(&$val, $key) use($replaceWithReference) {
+        array_walk($query, function(&$val, $key) use($replaceWithReference) {
             if ($key[0] == '$') return;
 
             // Special case to take MongoIds out of references
@@ -469,6 +460,21 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             }
         });
 
+        return $query;
+    }
+
+    /**
+     * To be able to paginate results, I have taken out the 'find' call and made it
+     * its own function. It returns an array containing the result set, and the
+     * total number of results, useful for pagination
+     */
+    public static function find($args = array())
+    {
+        $default = array('query' => array(), 'fields' => array());
+        $args = array_merge($default, $args);
+
+        $args['query'] = static::_convertQuery($args['query']);
+
         // Add projection keys for $meta sort entries
         if (isset($args['sort']) && is_array($args['sort'])) {
             foreach($args['sort'] as $fld => $entry) {
@@ -479,7 +485,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         $cursor = static::getCollection()->find($args['query'], $args['fields']);
-        $count = $cursor->count();
+        //$count = $cursor->count();
 
         if (isset($args['sort']) && is_array($args['sort'])) {
             // Convert 'asc' and 'desc' to 1 and -1
@@ -510,10 +516,16 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         $ret = array(
             'result' => array_map(array(get_called_class(), 'map'), iterator_to_array($cursor)),
-            'total' => $count
+            // 'total' => $count
         );
 
         return $ret;
+    }
+
+    public static function count($query)
+    {
+        $query = static::_convertQuery($query);
+        return static::getCollection()->count($query);
     }
 
     /**
@@ -526,11 +538,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $args['offset'] = $paginator->getOffset();
         $args['limit'] = $paginator->getItems();
 
+        $count = static::count($args['query']);
+        $paginator->setTotal($count);
+
+        $args['offset'] = $paginator->getOffset();
+
         $ret = static::find($args);
-        if ($paginator->setTotal($ret['total'])) {
-            $args['offset'] = $paginator->getOffset();
-            $ret = static::find($args);
-        }
+        $ret['total'] = $count;
 
         return $ret;
     }
