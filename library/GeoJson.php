@@ -23,6 +23,14 @@ class ZFE_GeoJson
         return $obj;
     }
 
+    public static function createPoint($latitude, $longitude)
+    {
+        $obj = new static(self::TYPE_POINT);
+        $obj->setCoordinates($longitude, $latitude);
+
+        return $obj;
+    }
+
     public function setCoordinates($latitude, $longitude)
     {
         $this->coords = array(floatval($longitude), floatval($latitude));
