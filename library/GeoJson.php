@@ -18,7 +18,7 @@ class ZFE_GeoJson
     public static function create($arr)
     {
         $obj = new static($arr['type']);
-        $obj->setCoordinates($arr['coordinates'][1], $arr['coordinates'][0]);
+        $obj->coords = $arr['coordinates'];
 
         return $obj;
     }
@@ -33,6 +33,7 @@ class ZFE_GeoJson
 
     public function setCoordinates($latitude, $longitude)
     {
+        $this->type = self::TYPE_POINT;
         $this->coords = array(floatval($longitude), floatval($latitude));
     }
 
@@ -45,14 +46,18 @@ class ZFE_GeoJson
     {
         if (!is_array($this->coords)) return self::$_default[1];
 
-        return $this->coords[1];
+        $coords = $this->type == self::TYPE_POINT ? $this->coords : $this->coords[0];
+
+        return $coords[1];
     }
 
     public function getLongitude()
     {
         if (!is_array($this->coords)) return self::$_default[0];
 
-        return $this->coords[0];
+        $coords = $this->type == self::TYPE_POINT ? $this->coords : $this->coords[0];
+
+        return $coords[0];
     }
 
     public function toArray()
@@ -63,12 +68,9 @@ class ZFE_GeoJson
         );
     }
 
-    /**
-     * Only works if it is a point.
-     */
     public function toLatLng()
     {
-        return implode(",", array_reverse($this->coords));
+        return $this->getLatitude() . "," . $this->getLongitude();
     }
 
     public function getJson()
