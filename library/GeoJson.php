@@ -5,7 +5,7 @@ class ZFE_GeoJson
     const TYPE_POINT = "Point";
     const TYPE_MULTIPOINT = "MultiPoint";
 
-    private static $_default = array(136, 39);
+    private static $_default = array('lng' => 136, 'lat' => 39);
 
     private $type;
     private $coords;
@@ -18,7 +18,7 @@ class ZFE_GeoJson
     public static function create($arr)
     {
         $obj = new static($arr['type']);
-        $obj->coords = $arr['coordinates'];
+        $obj->coords = array_combine(array('lng', 'lat'), array_values($arr['coordinates']));
 
         return $obj;
     }
@@ -26,7 +26,7 @@ class ZFE_GeoJson
     public static function createPoint($latitude, $longitude)
     {
         $obj = new static(self::TYPE_POINT);
-        $obj->setCoordinates($longitude, $latitude);
+        $obj->setCoordinates($latitude, $longitude);
 
         return $obj;
     }
@@ -34,7 +34,10 @@ class ZFE_GeoJson
     public function setCoordinates($latitude, $longitude)
     {
         $this->type = self::TYPE_POINT;
-        $this->coords = array(floatval($longitude), floatval($latitude));
+        $this->coords = array(
+            'lng' => floatval($longitude),
+            'lat' => floatval($latitude)
+        );
     }
 
     public function getCoordinates()
@@ -44,27 +47,27 @@ class ZFE_GeoJson
 
     public function getLatitude()
     {
-        if (!is_array($this->coords)) return self::$_default[1];
+        if (!is_array($this->coords)) return self::$_default['lat'];
 
         $coords = $this->type == self::TYPE_POINT ? $this->coords : $this->coords[0];
 
-        return $coords[1];
+        return $coords['lat'];
     }
 
     public function getLongitude()
     {
-        if (!is_array($this->coords)) return self::$_default[0];
+        if (!is_array($this->coords)) return self::$_default['lng'];
 
         $coords = $this->type == self::TYPE_POINT ? $this->coords : $this->coords[0];
 
-        return $coords[0];
+        return $coords['lng'];
     }
 
     public function toArray()
     {
         return array(
             'type' => $this->type,
-            'coordinates' => $this->coords
+            'coordinates' => array_values($this->coords)
         );
     }
 

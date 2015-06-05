@@ -100,9 +100,9 @@ abstract class ZFE_Core
     public static function cache($cache_id, $fn, $expire = null, $bypass = false)
     {
         $cache = Zend_Registry::get('Zend_Cache');
-        if (is_null($cache) || $bypass) return $fn();
+        if (is_null($cache)) return $fn();
 
-        if (($ret = $cache->load($cache_id)) === false) {
+        if (($ret = $cache->load($cache_id)) === false || $bypass) {
             $ret = $fn();
             $cache->save($ret, $cache_id, array(), $expire);
         }
