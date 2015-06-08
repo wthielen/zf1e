@@ -506,9 +506,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         // Apply pagination
-        if (isset($args['offset']) && isset($args['limit'])) {
-            $offset = intval($args['offset']);
-            $limit = intval($args['limit']);
+        if (isset($args['offset']) || isset($args['limit'])) {
+            $offset = @intval($args['offset']);
+            $limit = @intval($args['limit']);
 
             if ($offset > 0) $cursor->skip($offset);
             if ($limit > 0) $cursor->limit($limit);
