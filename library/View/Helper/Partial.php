@@ -28,10 +28,19 @@ class ZFE_View_Helper_Partial extends Zend_View_Helper_Partial
         if (null !== $resource) {
             $paths = $this->view->getScriptPaths();
 
-            $lang = $resource->getLanguage();
+            // Use the view's language if set, otherwise the resource's language
+            $lang = isset($this->view->language) ? $this->view->language : $resource->getLanguage();
             $default = $resource->getDefault();
 
-            $ext = pathinfo($origname, PATHINFO_EXTENSION);
+            // To support multiple extensions, gather the extensions in an array
+            // This supports e.g. .ajax.phtml and .html.phtml, etc.
+            $ext_array = array();
+            $name = $origname;
+            while (($x = pathinfo($name, PATHINFO_EXTENSION)) != "") {
+                array_unshift($ext_array, $x);
+                $name = pathinfo($name, PATHINFO_FILENAME);
+            }
+            $ext = implode(".", $ext_array);
             $name = substr_replace($origname, "-" . $lang, strrpos($origname, $ext) - 1, 0);
 
             $exists = array_reduce($paths, function($ret, $path) use($name) {
