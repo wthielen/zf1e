@@ -34,15 +34,26 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
     {
         parent::postDispatch();
 
-        $action = $this->getRequest()->getActionName();
-        $viewRenderer = $this->getHelper('ViewRenderer');
+        $front = Zend_Controller_Front::getInstance();
+        $mlPlugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
+
+        $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
+        $lang = $resource->getLanguage();
+        $default = $resource->getDefault();
+
+        // Add alternate URLs for the translations
+        $languages = $resource->getLanguages();
+        unset($languages[$lang]);
+        foreach($languages as $_lang => $language) {
+            $this->view->headLink()->appendAlternate(
+                $mlPlugin->composeUrl($_lang), 'text/html', '', array('hreflang' => $_lang)
+            );
+        }
 
         // If the action is in the i18nActions variable, update the script name to render
+        $action = $this->getRequest()->getActionName();
         if (in_array($action, $this->i18nActions)) {
-            $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
-
-            $lang = $resource->getLanguage();
-            $default = $resource->getDefault();
+            $viewRenderer = $this->getHelper('ViewRenderer');
 
             // Update the script with the current language
             $viewRenderer->setScriptAction($action . "-" . $lang);
