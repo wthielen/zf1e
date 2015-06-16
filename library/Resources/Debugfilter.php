@@ -54,12 +54,7 @@ class ZFE_Resource_Debugfilter extends Zend_Application_Resource_ResourceAbstrac
         $request = $front->getRequest();
         $ipaddr = $request->getClientIp();
 
-        $octets = array_map("intval", explode(".", $ipaddr));
-        if ($octets[0] == 10 || $octets[0] == 127) return true;
-        if ($octets[0] == 192 && $octets[1] == 168) return true;
-        if ($octets[0] == 172 && $octets[1] >= 16 && $octets[1] < 32) return true;
-
-        return false;
+        return ZFE_Core::isLocal($ipaddr);
     }
 
     /**

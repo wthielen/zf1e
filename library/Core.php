@@ -62,6 +62,26 @@ abstract class ZFE_Core
     }
 
     /**
+     * Checks if the given IP is a local IP address.
+     * If no IP is given, it checks the REMOTE_ADDR IP
+     */
+    public static function isLocal($ipaddr = null)
+    {
+        if (is_null($ipaddr)) {
+            $front = Zend_Controller_Front::getInstance();
+            $request = $front->getRequest();
+            $ipaddr = $request->getClientIp();
+        }
+
+        $octets = array_map("intval", explode(".", $ipaddr));
+        if ($octets[0] == 10 || $octets[0] == 127) return true;
+        if ($octets[0] == 192 && $octets[1] == 168) return true;
+        if ($octets[0] == 172 && $octets[1] >= 16 && $octets[1] < 32) return true;
+
+        return false;
+    }
+
+    /**
      * Checks if the given URL is on the same domain as us.
      */
     public static function sameDomain($url)
@@ -156,6 +176,8 @@ abstract class ZFE_Core
      *
      * It takes into account whether xdebug is loaded or not. Xdebug already puts
      * the output in a <pre /> block, so we can skip that when it is loaded.
+     *
+     * Added CLI-specific routines
      */
     private static function _dump()
     {
@@ -168,11 +190,18 @@ abstract class ZFE_Core
             $source = next($bt);
         } while($source['file'] === __FILE__);
 
+        $cli = php_sapi_name() == 'cli';
         $file = str_replace(realpath(APPLICATION_PATH . "/.."), "", $source['file']);
-        echo "<p>(root)<b>" . $file . "</b>:" . $source['line'] . " dumped:</p>" . PHP_EOL;
+        if ($cli) {
+            echo "\033[01;31m(root)\033[0m" . $file . ":" . $source['line'] . " dumped:" . PHP_EOL;
+        } else {
+            echo "<p>(root)<b>" . $file . "</b>:" . $source['line'] . " dumped:</p>" . PHP_EOL;
+        }
 
-        if (!extension_loaded("xdebug") || ini_get('html_errors') == 0) echo "<pre>";
+        if (!$cli && (!extension_loaded("xdebug") || ini_get('html_errors') == 0)) echo "<pre>";
         call_user_func_array('var_dump', $vars);
-        if (!extension_loaded("xdebug") || ini_get('html_errors') == 0) echo "</pre>";
+        if (!$cli && (!extension_loaded("xdebug") || ini_get('html_errors') == 0)) echo "</pre>";
+
+        if ($cli) echo PHP_EOL;
     }
 }
