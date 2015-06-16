@@ -309,7 +309,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     final public static function getResource()
     {
         if (null === self::$resource) {
-            $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
+            if (php_sapi_name() == 'cli') {
+                $app = Zend_Registry::get('CliApplication');
+                $bootstrap = $app->getBootstrap();
+            } else {
+                $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
+            }
             self::$resource = $bootstrap->getPluginResource('Mongo');
         }
 
@@ -514,6 +519,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             if ($limit > 0) $cursor->limit($limit);
         }
 
+        // Do not remove the 'result' entry. It is important for the findPaginated function
+        // If removed here, fix findPaginated to have a 'result' array entry
         $ret = array(
             'result' => array_map(array(get_called_class(), 'map'), iterator_to_array($cursor)),
             // 'total' => $count

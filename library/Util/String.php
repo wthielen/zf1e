@@ -145,4 +145,21 @@ abstract class ZFE_Util_String
 
         return $ret;
     }
+
+    /**
+     * Utility functions to (un)serialize data when necessary
+     */
+    public static function maybe_serialize($data)
+    {
+        if (is_null($data) || is_scalar($data)) return $data;
+
+        return serialize($data);
+    }
+
+    public static function maybe_unserialize($data)
+    {
+        $result = @unserialize($data);
+
+        return ($result !== false) || ($result === false && $data === serialize(false)) ? $result : $data;
+    }
 }

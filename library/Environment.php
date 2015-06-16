@@ -97,11 +97,15 @@ final class ZFE_Environment
 
     public static function isDevelopment()
     {
-        return strpos(APPLICATION_ENV, 'development') !== false;
+        $env = php_sapi_name() == 'cli' ? SCRIPT_ENV : APPLICATION_ENV;
+
+        return strpos($env, 'development') !== false;
     }
 
     public static function isProduction()
     {
-        return strpos(APPLICATION_ENV, 'production') !== false;
+        $env = php_sapi_name() == 'cli' ? SCRIPT_ENV : APPLICATION_ENV;
+
+        return strpos($env, 'production') !== false;
     }
 }
