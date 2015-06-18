@@ -20,6 +20,19 @@ abstract class ZFE_Core
     }
 
     /**
+     * Gets the parent classes of an instance
+     */
+    public static function getParents($obj, $parents = array())
+    {
+        if ($parent = get_parent_class($obj)) {
+            $parents[] = $parent;
+            return self::getParents($parent, $parents);
+        }
+
+        return $parents;
+    }
+
+    /**
      * Swaps the value of two variables
      */
     public static function swap(&$x, &$y)
