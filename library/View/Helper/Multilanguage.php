@@ -11,10 +11,18 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
 
     public function init()
     {
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
+        $front = false;
+        if (php_sapi_name() == 'cli') {
+            $app = Zend_Registry::get('CliApplication');
+            $bootstrap = $app->getBootstrap();
+        } else {
+            $front = Zend_Controller_Front::getInstance();
+            $bootstrap = $front->getParam('bootstrap');
+        }
+
         $this->resource = $bootstrap->getPluginResource('Multilanguage');
-        $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
+
+        if ($front) $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
     }
 
     /**

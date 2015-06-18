@@ -46,7 +46,11 @@ final class ZFE_Environment
 
     public static function getModuleName()
     {
-        if (php_sapi_name() == 'cli') return 'default';
+        if (php_sapi_name() == 'cli') {
+            $app = Zend_Registry::get('CliApplication');
+
+            return $app->getModule();
+        }
 
         $front = Zend_Controller_Front::getInstance();
         $request = $front->getRequest();
@@ -75,8 +79,11 @@ final class ZFE_Environment
 
     public static function getModulePath()
     {
+
         $front = Zend_Controller_Front::getInstance();
-        return $front->getModuleDirectory(self::getModuleName());
+        $path = $front->getModuleDirectory(self::getModuleName());
+
+        return $path;
     }
 
     public static function getLibraryPath()
@@ -87,7 +94,14 @@ final class ZFE_Environment
 
     public static function getDocumentRoot()
     {
-        return realpath($_SERVER['DOCUMENT_ROOT']);
+        if (php_sapi_name() == 'cli') {
+            $app = Zend_Registry::get('CliApplication');
+            $path = APPLICATION_PATH . "/../" . $app->getModule();
+        } else {
+            $path = $_SERVER['DOCUMENT_ROOT'];
+        }
+
+        return realpath($path);
     }
 
     public static function getFilePath($path)
