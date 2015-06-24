@@ -604,7 +604,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function delete()
     {
-        static::remove(array('_id' => $this->_id), array('justOne' => true));
+        static::getCollection()->remove(array('_id' => $this->_id), array('justOne' => true));
     }
 
     /**

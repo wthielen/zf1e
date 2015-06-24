@@ -59,6 +59,23 @@ final class ZFE_Environment
     }
 
     /**
+     * Fetches a Zend plugin resource object
+     * TODO: In some cases it is not available yet because there is no FrontController yet!
+     */
+    public static function getResource($name)
+    {
+        if (php_sapi_name() == 'cli') {
+            $app = Zend_Registry::get('CliApplication');
+            $bootstrap = $app->getBootstrap();
+        } else {
+            $front = Zend_Controller_Front::getInstance();
+            $bootstrap = $front->getParam('bootstrap');
+        }
+
+        return $bootstrap->getPluginResource($name);
+    }
+
+    /**
      * Resource namespace/prefix
      *
      * This function will be useful in object models, as some objects

@@ -43,6 +43,16 @@ class ZFE_Model_Mongo_File extends ZFE_Model_Mongo
         return is_null(static::$storagePath) ? static::STORAGE_GRIDFS : static::STORAGE_FS;
     }
 
+    public function getFilename()
+    {
+        $file = implode(DIRECTORY_SEPARATOR, array(
+            static::$storagePath,
+            $this->filename
+        ));
+
+        return $file;
+    }
+
     /**
      * Default getFile function
      *
@@ -50,10 +60,7 @@ class ZFE_Model_Mongo_File extends ZFE_Model_Mongo
      */
     public function getFile()
     {
-        $file = implode(DIRECTORY_SEPARATOR, array(
-            static::$storagePath,
-            $this->filename
-        ));
+        $file = $this->getFilename();
 
         if (!file_exists($file)) {
             throw new ZFE_Model_Mongo_Exception("File not found: $file");
@@ -71,6 +78,16 @@ class ZFE_Model_Mongo_File extends ZFE_Model_Mongo
         $file = $this->getFile();
 
         return file_get_contents($file);
+    }
+
+    public function delete()
+    {
+        if ($this->getStorageType() == static::STORAGE_FS) {
+            $file = $this->getFilename();
+            @unlink($file);
+        }
+
+        parent::delete();
     }
 
     public static function map($data)
