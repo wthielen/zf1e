@@ -351,6 +351,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 if ($ret['ok'] == 0) throw new ZFE_Model_Mongo_Exception($ret['errmsg'], $ret['code']);
                 $ret = $ret['result'];
                 break;
+            case 'distinct':
+                foreach($ret as &$val) {
+                    if (MongoDBRef::isRef($val)) $val = static::getObject($val);
+                }
+                break;
             }
         }
 
