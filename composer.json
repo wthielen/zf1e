@@ -8,6 +8,11 @@
         }
     ],
     "minimum-stability": "dev",
+    "autoload": {
+        "psr-0": { 
+            "ZFE_": "library"
+        }
+    },
     
     
     "require-dev": {
