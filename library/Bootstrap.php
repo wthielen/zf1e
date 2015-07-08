@@ -30,7 +30,7 @@ class ZFE_Bootstrap
     {
         // Register the ZFE controller plugins as helpers
         Zend_Controller_Action_HelperBroker::addPath(
-            LIBRARY_PATH . '/ZFE/Controller/Helpers',
+            ZFE_Environment::getLibraryPath() . '/Controller/Helpers',
             'ZFE_Controller_Helper'
         );
 

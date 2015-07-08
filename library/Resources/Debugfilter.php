@@ -36,6 +36,8 @@ class ZFE_Resource_Debugfilter extends Zend_Application_Resource_ResourceAbstrac
      */
     public function isAllowed()
     {
+        if (php_sapi_name() == 'cli') return true;
+
         $front = Zend_Controller_Front::getInstance();
         $request = $front->getRequest();
 

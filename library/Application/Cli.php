@@ -22,6 +22,7 @@ class ZFE_Application_Cli extends Zend_Application
         Zend_Registry::set('CliApplication', $this);
     }
 
+
     public function getModule()
     {
         return $this->opts->module ? $this->opts->module : 'default';

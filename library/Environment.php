@@ -105,8 +105,7 @@ final class ZFE_Environment
 
     public static function getLibraryPath()
     {
-        // TODO Use includePaths.library from application.ini
-        return realpath(APPLICATION_PATH . '/../library');
+        return realpath(dirname(__FILE__));
     }
 
     public static function getDocumentRoot()
