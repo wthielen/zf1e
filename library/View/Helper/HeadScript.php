@@ -17,12 +17,8 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
     {
         parent::__construct();
 
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
-        if ($bootstrap) {
-            $resource = $bootstrap->getPluginResource('minifier');
-            if ($resource) $this->_minifier = $resource->js;
-        }
+        $resource = ZFE_Environment::getResource('minifier');
+        if ($resource) $this->_minifier = $resource->js;
     }
 
     public function toString($indent = null)

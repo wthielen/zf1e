@@ -23,7 +23,7 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
     {
         parent::init();
 
-        $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
+        $resource = ZFE_Environment::getResource('Multilanguage');
         $this->lang = $resource->getLanguage();
         if (is_null($this->lang)) $this->lang = $resource->getDefault();
 
@@ -37,7 +37,7 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
         $front = Zend_Controller_Front::getInstance();
         $mlPlugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
 
-        $resource = $this->getInvokeArg('bootstrap')->getPluginResource('Multilanguage');
+        $resource = ZFE_Environment::getResource('Multilanguage');
         $lang = $resource->getLanguage();
         $default = $resource->getDefault();
 

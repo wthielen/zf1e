@@ -21,9 +21,7 @@ class ZFE_View_Helper_Partial extends Zend_View_Helper_Partial
             return $this;
         }
 
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
-        $resource = $bootstrap->getPluginResource('Multilanguage');
+        $resource = ZFE_Environment::getResource('Multilanguage');
 
         if (null !== $resource) {
             $paths = $this->view->getScriptPaths();

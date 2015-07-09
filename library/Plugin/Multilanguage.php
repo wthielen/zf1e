@@ -17,10 +17,10 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
         $front = Zend_Controller_Front::getInstance();
         $bootstrap = $front->getParam('bootstrap');
 
-        $this->resource = $bootstrap->getPluginResource('Multilanguage');
         $this->locale = $bootstrap->getResource('locale');
         if (null === $this->locale) $this->locale = new Zend_Locale();
 
+        $this->resource = ZFE_Environment::getResource('Multilanguage');
         $options = $this->resource->getOptions();
         $language = $this->getBrowserLanguage();
 

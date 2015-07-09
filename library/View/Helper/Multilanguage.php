@@ -11,17 +11,9 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
 
     public function init()
     {
-        $front = false;
-        if (php_sapi_name() == 'cli') {
-            $app = Zend_Registry::get('CliApplication');
-            $bootstrap = $app->getBootstrap();
-        } else {
-            $front = Zend_Controller_Front::getInstance();
-            $bootstrap = $front->getParam('bootstrap');
-        }
+        $this->resource = ZFE_Environment::getResource('Multilanguage');
 
-        $this->resource = $bootstrap->getPluginResource('Multilanguage');
-
+        $front = Zend_Controller_Front::getInstance();
         if ($front) $this->plugin = $front->getPlugin('ZFE_Plugin_Multilanguage');
     }
 

@@ -27,9 +27,7 @@ class ZFE_Controller_Helper_Jquery extends Zend_Controller_Action_Helper_Abstrac
         );
 
         // Fetch options from the application's configuration
-        $front = Zend_Controller_Front::getInstance();
-        $bootstrap = $front->getParam('bootstrap');
-        $resource = $bootstrap->getPluginResource('Jquery');
+        $resource = ZFE_Environment::getResource('Jquery');
 
         if ($resource) {
             self::$options = array_merge(self::$options, $resource->getOptions());

@@ -309,13 +309,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     final public static function getResource()
     {
         if (null === self::$resource) {
-            if (php_sapi_name() == 'cli') {
-                $app = Zend_Registry::get('CliApplication');
-                $bootstrap = $app->getBootstrap();
-            } else {
-                $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
-            }
-            self::$resource = $bootstrap->getPluginResource('Mongo');
+            self::$resource = ZFE_Environment::getResource('Mongo');
         }
 
         return self::$resource;
