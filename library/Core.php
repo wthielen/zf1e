@@ -14,6 +14,10 @@ abstract class ZFE_Core
      */
     public static function cast($obj, $cls)
     {
+        if (!class_exists($cls) || get_class($obj) == $cls) {
+            return $obj;
+        }
+
         return unserialize(
             preg_replace('/^O:\d+:"[^"]*"/', 'O:' . strlen($cls) . ':"' . $cls . '"', serialize($obj))
         );
