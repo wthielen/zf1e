@@ -1,33 +1,41 @@
 <?php
 
+/**
+ * The Paginator view helper
+ *
+ * Based on the pageInfo variable in the view, this view helper will create
+ * the basic HTML structure for page links, together with the previous, next,
+ * first page and last page links.
+ *
+ * This helper will use the pagination CSS classes as used by the Twitter
+ * Bootstrap framework. Support for other frameworks may be added. Configurable
+ * class names may be implemented.
+ *
+ * TODO Based on a function argument, this view helper will create a list of
+ * page numbers, limit to show only a range around the current page number,
+ * or show an input field that shows the current page number, but allows the
+ * user to enter any page number.
+ */
 class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 {
-    /**
-     * The Paginator view helper
-     *
-     * Based on the pageInfo variable in the view, this view helper will create
-     * the basic HTML structure for page links, together with the previous, next,
-     * first page and last page links.
-     *
-     * This helper will use the pagination CSS classes as used by the Twitter
-     * Bootstrap framework. Support for other frameworks may be added. Configurable
-     * class names may be implemented.
-     *
-     * TODO Based on a function argument, this view helper will create a list of
-     * page numbers, limit to show only a range around the current page number,
-     * or show an input field that shows the current page number, but allows the
-     * user to enter any page number.
-     */
+    protected static $style = array(
+        'first' => '&lt;&lt;',
+        'prev' => '&lt;',
+        'next' => '&gt;',
+        'last' => '&gt;&gt;'
+    );
+
     public function paginator($pageInfo, $options = array())
     {
         $default = array(
             'maxEntries' => 11,
             'inputField' => false,
-            'x_of_y_text' => 'Page %s of %d'
+            'x_of_y_text' => 'Page %s of %d',
+            'url' => $this->view->url()
         );
 
         $options = array_merge($default, $options);
-        $baseUrl = $this->view->url();
+        $baseUrl = $options['url'];
 
         $useInput = $options['inputField'];
 
@@ -49,12 +57,12 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         if (!$firstPage) {
             $html .= '<li class="first">';
             $url = $baseUrl . '?' . http_build_query(array('p' => 1));
-            $html .= '<a href="' . $url . '" data-page="1">&lt;&lt;</a>';
+            $html .= '<a href="' . $url . '" data-page="1" rel="nofollow">' . static::$style['first'] . '</a>';
             $html .= '</li>';
 
             $html .= '<li class="previous">';
             $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['page'] - 1));
-            $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] - 1) . '">&lt;</a>';
+            $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] - 1) . '" rel="nofollow">' . static::$style['prev'] . '</a>';
             $html .= '</li>';
 
             if (!$useInput && $start > 1) $html .= '<li class="disabled"><span>...</span></li>';
@@ -75,7 +83,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
                 if ($page == $pageInfo['page']) $cls[] = 'active';
 
                 $html .= '<li class="' . implode(' ', $cls) . '">';
-                $html .= '<a href="' . $url . '" data-page="' . $page . '">' . $page . '</a>';
+                $html .= '<a href="' . $url . '" data-page="' . $page . '" rel="nofollow">' . $page . '</a>';
                 $html .= '</li>';
             }
         }
@@ -87,12 +95,12 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 
             $html .= '<li class="next">';
             $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['page'] + 1));
-            $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] + 1) . '">&gt;</a>';
+            $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] + 1) . '" rel="nofollow">' . static::$style['next'] . '</a>';
             $html .= '</li>';
 
             $html .= '<li class="last">';
             $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['pages']));
-            $html .= '<a href="' . $url . '" data-page="' . $pageInfo['pages'] . '">&gt;&gt;</a>';
+            $html .= '<a href="' . $url . '" data-page="' . $pageInfo['pages'] . '" rel="nofollow">' . static::$style['last'] . '</a>';
             $html .= '</li>';
         }
 

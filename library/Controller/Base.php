@@ -18,6 +18,7 @@ class ZFE_Controller_Base extends Zend_Controller_Action
         $view = $this->initView();
 
         // Add the library's view helper path
+        // Should preferably be done in resources.view.helperPath.*
         $libraryPath = realpath(dirname(__FILE__) . '/..');
         $view->addHelperPath($libraryPath . '/View/Helper', 'ZFE_View_Helper');
     }
