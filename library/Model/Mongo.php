@@ -544,6 +544,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $args['offset'] = $paginator->getOffset();
         $args['limit'] = $paginator->getItems();
 
+        if (!isset($args['query'])) $args['query'] = array();
+
         $count = static::count($args['query']);
         $paginator->setTotal($count);
 

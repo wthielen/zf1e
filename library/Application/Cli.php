@@ -2,15 +2,17 @@
 
 class ZFE_Application_Cli extends Zend_Application
 {
+    protected static $optConfig = array(
+        'module|m=w' => 'Select module',
+        'verbose|v' => 'Be verbose',
+        'help|h' => 'Show this help text'
+    );
+
     protected $opts;
 
     public function __construct($environment, $options)
     {
-        $this->opts = new Zend_Console_Getopt(array(
-            'module|m=w' => 'Select module',
-            'verbose|v' => 'Be verbose',
-            'help|h' => 'Show this help text'
-        ));
+        $this->opts = new Zend_Console_Getopt(static::$optConfig);
 
         $module = $this->getModule();
         if ($module !== 'default') {
@@ -19,17 +21,6 @@ class ZFE_Application_Cli extends Zend_Application
 
         parent::__construct($environment, $options);
 
-        Zend_Registry::set('CliApplication', $this);
-    }
-
-
-    public function getModule()
-    {
-        return $this->opts->module ? $this->opts->module : 'default';
-    }
-
-    public function run()
-    {
         try {
             $this->opts->parse();
         } catch (Zend_Console_Getopt_Exception $e) {
@@ -41,11 +32,29 @@ class ZFE_Application_Cli extends Zend_Application
             $this->usage();
             exit(0);
         }
+
+        Zend_Registry::set('CliApplication', $this);
     }
+
+    public function getModule()
+    {
+        return $this->opts->module ? $this->opts->module : 'default';
+    }
+
+    public function run() {}
 
     public function error($message)
     {
-        fwrite(STDERR, $message . "\n");
+        $ts = new DateTime();
+        $str = sprintf("%s [ERROR] %s" . PHP_EOL, $ts->format(DateTime::ISO8601), $message);
+        fwrite(STDERR, $str);
+    }
+
+    public function notice($message)
+    {
+        $ts = new DateTime();
+        $str = sprintf("%s [NOTICE] %s" . PHP_EOL, $ts->format(DateTime::ISO8601), $message);
+        fwrite(STDOUT, $str);
     }
 
     public function usage()
