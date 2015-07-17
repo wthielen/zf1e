@@ -38,8 +38,7 @@ class ZFE_Plugin_ActiveModule extends Zend_Controller_Plugin_Abstract
 
     protected function _getActiveBootstrap($name)
     {
-        $bootstrap = Zend_Controller_Front::getInstance()->getParam('bootstrap');
-        $moduleList = $bootstrap->getResource('modules');
+        $moduleList = ZFE_Environment::getResource('modules')->getExecutedBootstraps();
 
         return isset($moduleList[$name]) ? $moduleList[$name] : null;
     }
