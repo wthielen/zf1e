@@ -393,10 +393,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Simply fetch it from the database and store it in the cache if
         // it is not already stored in the cache, and then return from cache.
         if (!isset(self::$_cache[$class][$id])) {
-            self::$_cache[$class][$id] = static::findOne(array('query' => array($field => $id)));
+            $found = static::findOne(array('query' => array($field => $id)));
+            if ($found) self::$_cache[$class][$id] = $found;
         }
 
-        return self::$_cache[$class][$id];
+        return isset(self::$_cache[$class][$id]) ? self::$_cache[$class][$id] : null;
     }
 
     /**
