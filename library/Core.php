@@ -106,7 +106,7 @@ abstract class ZFE_Core
         $domain = $_SERVER['HTTP_HOST'];
         $urlDomain = parse_url($url, PHP_URL_HOST);
 
-        return $domain == $urlDomain;
+        return is_null($urlDomain) || $domain == $urlDomain;
     }
 
     public static function getFullUrl($path)
