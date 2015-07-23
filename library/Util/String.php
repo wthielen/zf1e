@@ -132,6 +132,10 @@ abstract class ZFE_Util_String
         return $str;
     }
 
+    /**
+     * An utility function to convert a camelcased string into a plain
+     * lowercase string with dashes (or anything other, given by $replacement)
+     */
     public static function fromCamelCase($str, $replacement = '-')
     {
         $ret = '';
@@ -147,7 +151,7 @@ abstract class ZFE_Util_String
     }
 
     /**
-     * Utility functions to (un)serialize data when necessary
+     * Utility function to serialize data when necessary
      */
     public static function maybe_serialize($data)
     {
@@ -156,6 +160,9 @@ abstract class ZFE_Util_String
         return serialize($data);
     }
 
+    /**
+     * Utility function to unserialize data when necessary
+     */
     public static function maybe_unserialize($data)
     {
         $result = @unserialize($data);
