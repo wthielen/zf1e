@@ -5,7 +5,7 @@
  */
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
-    protected $_id;
+    protected $_id = null;
     protected $_isPersistable = true;
 
     protected static $resource;
@@ -412,7 +412,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             return $this->_data[$field];
         }
 
-        return null;
+        return $this->getMongoIdentifier();
     }
 
     /**
@@ -591,7 +591,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         // Remove from cache after saving
         $class = get_called_class();
-        unset(self::$_cache[$class][$this->_data[static::$_identifierField]]);
+        unset(self::$_cache[$class][$this->getIdentifier()]);
 
         // Run on*Updated functions on changed fields and clear it
         foreach($this->_changedFields as $fld => $oldValues) {
