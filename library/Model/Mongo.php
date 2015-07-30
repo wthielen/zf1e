@@ -171,7 +171,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      */
     public function toArray($keys = null, $levels = 0)
     {
-        if (is_null($keys)) $keys = array_keys($this->_data);
+        if (empty($keys)) $keys = array_keys($this->_data);
 
         $ret = array();
         foreach($keys as $key) {
