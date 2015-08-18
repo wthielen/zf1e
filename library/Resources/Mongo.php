@@ -55,11 +55,15 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
     {
         if (is_null($this->connection)) {
             $uri = "mongodb://";
+            $options = array("connect" => TRUE);
             if ($this->username && $this->password) {
-                $uri .= $this->username . ":" . $this->password . "@";
+                $options["username"] = $this->username;
+                $options["password"] = $this->password;
+                $options["db"] = $this->database;
             }
             $uri .= $this->host . ":" . $this->port;
-            $this->connection = new MongoClient($uri);
+            $this->connection = new MongoClient($uri, $options);
+
         }
 
         return $this->connection->{$this->database};
