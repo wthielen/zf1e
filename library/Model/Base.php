@@ -187,6 +187,20 @@ class ZFE_Model_Base
     }
 
     /**
+     * Sets the value for a given key in a specific language
+     *
+     * Throws an exception when the given key is not a translated entry.
+     */
+    public function unsetTranslation($key, $lang)
+    {
+        if (!in_array($key, static::$translations)) {
+            throw new Exception("Field $key is not a translated entry. Please check " . get_class($this) . "::\$translations.");
+        }
+
+        unset($this->_data[$key][$lang]);
+    }
+
+    /**
      * Gets the value of the given key in the specified language.
      *
      * If the key is not a translated entry, it will fallback to the normal
