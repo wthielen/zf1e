@@ -50,6 +50,13 @@ class ZFE_Application_Cli extends Zend_Application
         fwrite(STDERR, $str);
     }
 
+    public function warn($message)
+    {
+        $ts = new DateTime();
+        $str = sprintf("%s [WARNING] %s" . PHP_EOL, $ts->format(DateTime::ISO8601), $message);
+        fwrite(STDERR, $str);
+    }
+
     public function notice($message)
     {
         $ts = new DateTime();
