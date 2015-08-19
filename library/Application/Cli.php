@@ -12,7 +12,14 @@ class ZFE_Application_Cli extends Zend_Application
 
     public function __construct($environment, $options)
     {
-        $this->opts = new Zend_Console_Getopt(static::$optConfig);
+        $optConfig = static::$optConfig;
+
+        if (isset($options['optrules'])) {
+            $optConfig = array_merge($optConfig, $options['optrules']);
+            unset($options['optrules']);
+        }
+
+        $this->opts = new Zend_Console_Getopt($optConfig);
 
         $module = $this->getModule();
         if ($module !== 'default') {
@@ -32,7 +39,6 @@ class ZFE_Application_Cli extends Zend_Application
             $this->usage();
             exit(0);
         }
-
         Zend_Registry::set('CliApplication', $this);
     }
 

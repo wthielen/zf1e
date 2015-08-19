@@ -63,7 +63,6 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
             }
             $uri .= $this->host . ":" . $this->port;
             $this->connection = new MongoClient($uri, $options);
-
         }
 
         return $this->connection->{$this->database};
