@@ -81,7 +81,7 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
             foreach($compressable as $item) {
                 $file = $_SERVER['DOCUMENT_ROOT'] . $item->attributes['src'];
                 if (Zend_Loader::isReadable($file)) {
-                    $jsContent .= file_get_contents($file);
+                    $jsContent .= file_get_contents($file) . PHP_EOL;
                 }
             }
 
