@@ -95,7 +95,7 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                 foreach($compressable[$media] as $item) {
                     $file = $_SERVER['DOCUMENT_ROOT'] . $item->href;
                     if (Zend_Loader::isReadable($file)) {
-                        $cssContent .= file_get_contents($file);
+                        $cssContent .= file_get_contents($file) . PHP_EOL;
                     }
                 }
 

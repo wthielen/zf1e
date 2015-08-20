@@ -38,10 +38,7 @@ class ZFE_Resource_Debugfilter extends Zend_Application_Resource_ResourceAbstrac
     {
         if (php_sapi_name() == 'cli') return true;
 
-        $front = Zend_Controller_Front::getInstance();
-        $request = $front->getRequest();
-
-        $ipaddr = $request->getClientIp();
+        $ipaddr = $_SERVER['REMOTE_ADDR'];
 
         return $this->userAgentAllowed($this->isLocal() || in_array($ipaddr, $this->options['allowAddress']));
     }
@@ -52,9 +49,7 @@ class ZFE_Resource_Debugfilter extends Zend_Application_Resource_ResourceAbstrac
      */
     private function isLocal()
     {
-        $front = Zend_Controller_Front::getInstance();
-        $request = $front->getRequest();
-        $ipaddr = $request->getClientIp();
+        $ipaddr = $_SERVER['REMOTE_ADDR'];
 
         return ZFE_Core::isLocal($ipaddr);
     }
