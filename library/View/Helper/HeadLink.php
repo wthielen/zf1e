@@ -9,6 +9,8 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
 {
     protected $_minifier = false;
 
+    protected $doNotBundle = array();
+
     /**
      * The constructor checks if the minifier resource has been set up, and gets the
      * CSS minifier from the resource.
@@ -40,6 +42,9 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
             if ($item->rel == 'stylesheet' && 
                 $item->type == 'text/css' && 
                 !$item->conditionalStylesheet) {
+                    $file = basename($item->href);
+                    if (in_array($file, $this->doNotBundle)) continue;
+
                     if (!isset($compressable[$item->media])) {
                         $compressable[$item->media] = array();
                     }
