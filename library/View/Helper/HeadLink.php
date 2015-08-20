@@ -45,6 +45,9 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                     $file = basename($item->href);
                     if (in_array($file, $this->doNotBundle)) continue;
 
+                    if (ZFE_Util_String::startsWith($item->href, "http://")) continue;
+                    if (ZFE_Util_String::startsWith($item->href, "//")) continue;
+
                     if (!isset($compressable[$item->media])) {
                         $compressable[$item->media] = array();
                     }
