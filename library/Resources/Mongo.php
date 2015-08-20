@@ -7,6 +7,7 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
 {
     private $connection;
 
+    private $socket = false;
     private $host;
     private $port;
     private $username;
@@ -30,10 +31,12 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
             throw new Zend_Application_Resource_Exception('Please specify at least the Mongo database to use: resources.mongo.database');
         }
 
+        if (isset($o['socket'])) $this->socket = $o['socket'];
+
         $this->host = isset($o['host']) ? $o['host'] : ini_get('mongo.default_host');
         $this->port = isset($o['port']) ? $o['port'] : ini_get('mongo.default_port');
-        $this->username = isset($o['username']) ? $o['username'] : null;
-        $this->password = isset($o['password']) ? $o['password'] : null;
+        $this->username = isset($o['username']) && !empty($o['username']) ? $o['username'] : null;
+        $this->password = isset($o['password']) && !empty($o['password']) ? $o['password'] : null;
         $this->database = $o['database'];
 
         if (isset($o['mapping']) && is_array($o['mapping'])) {
@@ -61,7 +64,8 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
                 $options["password"] = $this->password;
                 $options["db"] = $this->database;
             }
-            $uri .= $this->host . ":" . $this->port;
+
+            $uri .= $this->socket ? $this->socket : $this->host . ":" . $this->port;
             $this->connection = new MongoClient($uri, $options);
         }
 
