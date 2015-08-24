@@ -28,7 +28,6 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
             return parent::toString($indent);
         }
 
-        ZFE_Util_Stopwatch::trigger(__METHOD__);
         $container = $this->getContainer();
         $container->ksort();
 
@@ -89,9 +88,7 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
             file_put_contents($path . "/" . $filename, $jsContent);
         }
 
-        $this->appendFile($cachedir . "/" . $filename);
-
-        ZFE_Util_Stopwatch::trigger(__METHOD__);
+        $this->prependFile($cachedir . "/" . $filename);
 
         return parent::toString($indent);
     }
