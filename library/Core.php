@@ -79,6 +79,23 @@ abstract class ZFE_Core
     }
 
     /**
+     * Checks if the given string matches an IP address
+     */
+    public static function isIpAddress($str)
+    {
+        $octets = explode(".", $str);
+        if (count($octets) != 4) return false;
+
+        // Checks if the octets are numeric, and if they are between 0 and 255
+        return array_reduce($octets, function($u, $v) {
+            $valid = ctype_digit($v);
+            $valid = $valid && (intval($v) >= 0) && (intval($v) <= 255);
+
+            return $u && $valid;
+        }, true);
+    }
+
+    /**
      * Checks if the given IP is a local IP address.
      * If no IP is given, it checks the REMOTE_ADDR IP
      */

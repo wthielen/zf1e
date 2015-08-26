@@ -37,11 +37,13 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
                 exit();
             }
 
-            // Extract the language from the domain, and store it
-            $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
-            $parts = explode('-', $subdomain);
-            $language = $parts[0];
-            if (isset($parts[1])) $language .= '_' . ucfirst($parts[1]);
+            // If it is not an IP address, extract the language from the domain, and store it
+            if (!ZFE_Core::isIpAddress($domain)) {
+                $subdomain = strtolower(str_replace('.' . $options['domain'], '', $domain));
+                $parts = explode('-', $subdomain);
+                $language = $parts[0];
+                if (isset($parts[1])) $language .= '_' . ucfirst($parts[1]);
+            }
         }
 
         // Store the language in the resource
