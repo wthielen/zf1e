@@ -9,6 +9,8 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
 {
     protected $_minifier = false;
 
+    protected $doNotBundle = array();
+
     /**
      * The constructor checks if the minifier resource has been set up, and gets the
      * CSS minifier from the resource.
@@ -36,6 +38,9 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
         // Collect JS files
         $compressable = array();
         foreach($items as $key => $item) {
+            $file = basename($item->attributes["src"]);
+            if (in_array($file, $this->doNotBundle)) continue;
+
             if (isset($item->attributes['src'])) {
                 $src = $item->attributes['src'];
 
@@ -88,6 +93,7 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
             file_put_contents($path . "/" . $filename, $jsContent);
         }
 
+        //Some scripts should be before the bundle, some should be after... Some should even be inbetween... Need something smarter.
         $this->prependFile($cachedir . "/" . $filename);
 
         return parent::toString($indent);
