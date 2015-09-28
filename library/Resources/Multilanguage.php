@@ -70,11 +70,13 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             $path = $options['contentPath'];
             $config = array(
                 'adapter' => $adapter,
+                'locale' => $this->getLanguage(),
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getLanguage() . self::$_adapterExt[$adapter]
             );
 
             $fallback_config = array(
                 'adapter' => $adapter,
+                'locale' => $this->getLanguage(),
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter]
             );
 
