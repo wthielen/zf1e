@@ -205,7 +205,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $ret;
     }
 
-    final public static function getDate(MongoDate $dt) 
+    final public static function getDate(MongoDate $dt)
     {
         $val = new DateTime('@' . $dt->sec);
         $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
@@ -417,12 +417,19 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Returns the Mongo identifier
+     * @return string?
      */
     public function getMongoIdentifier()
     {
         return $this->_id;
     }
 
+    /**
+     * Convert $query items for monog. Eg. convert {'key': [values]} to {'key': '$in': [values]} and
+     * convert objects to their mongo ID
+     * @param array $query ACQ mongo query to be converted
+     * @return array $query PHP mongo ready query
+     */
     protected static function _convertQuery($query)
     {
         // Replace ZFE_Model_Mongo instances by their references
@@ -449,7 +456,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 return;
             }
 
-            // Create a $in operation for multiple arguments to a query field
             if (is_array($val)) {
                 $keys = array_keys($val);
                 $mongoOperators = array_reduce($keys, function($u, $v) {
@@ -458,7 +464,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
                 if (!$mongoOperators) {
                     array_walk($val, $replaceWithReference);
-                    $val = array('$in' => $val);
+
+                    // MB UPDATE: I think this has to be {'$in': ["en", "ja"... rather than {'$in': {"1":"ja","2":"fr",..
+                    // which previously just '$in' => $val was creating, wrong array for $in
+                    // anyway, putting a note for now encase it breaks anything :)
+                    $val = array('$in' => array_values($val));
+                    // $val = array('$in' => $val);
                 }
             } else {
                 $replaceWithReference($val);
