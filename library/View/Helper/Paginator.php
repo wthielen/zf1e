@@ -27,11 +27,18 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 
     public function paginator($pageInfo, $options = array())
     {
+        // TODO: find a more universal method
+        try {
+            $currentUrl = $this->view->url(); // fails on routes with parameters (... is not defined)
+        } catch (Exception $e) {
+            $currentUrl = Zend_Controller_Front::getInstance()->getRequest()->getRequestUri(); // loses custom routes, keeps GET params (which interfere with the ?p= param)
+        }
+        //$currentUrl = ""; // does not work when inserted in a different page
         $default = array(
             'maxEntries' => 11,
             'inputField' => false,
             'x_of_y_text' => 'Page %s of %d',
-            'url' => $this->view->url()
+            'url' => $currentUrl
         );
 
         $options = array_merge($default, $options);
