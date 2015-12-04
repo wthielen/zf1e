@@ -46,6 +46,9 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
             }
         }
 
+        // healthcheck: only use whitelisted languages
+        if (!in_array($language, $options["languages"])) $language = $options["language"][0];
+
         // Store the language in the resource
         // This also initializes the translation resource
         $this->resource->setLanguage($language);
