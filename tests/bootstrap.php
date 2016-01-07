@@ -1,7 +1,7 @@
 <?php
 
 define('TEST_PATH', dirname(realpath(__FILE__)));
-define('LIBRARY_PATH', TEST_PATH . '/library');
+define('LIBRARY_PATH', realpath(TEST_PATH . '/../library'));
 
 // Ensure library/ is on include_path
 set_include_path(implode(PATH_SEPARATOR, array(
