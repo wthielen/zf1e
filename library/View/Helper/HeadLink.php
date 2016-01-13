@@ -39,8 +39,8 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
         // Collect CSS files
         $compressable = array();
         foreach($items as $key => $item) {
-            if ($item->rel == 'stylesheet' && 
-                $item->type == 'text/css' && 
+            if ($item->rel == 'stylesheet' &&
+                $item->type == 'text/css' &&
                 !$item->conditionalStylesheet) {
                     $file = basename($item->href);
                     if (in_array($file, $this->doNotBundle)) continue;
@@ -84,9 +84,15 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
 
             $cachedir = $this->_minifier->getCacheDir();
             $path = $_SERVER['DOCUMENT_ROOT'] . $cachedir;
+
+            // check directory exists. if not, create it
+            if (!file_exists($path)) {
+                mkdir($path, 0775, true);
+            }
+
             if (file_exists($path . "/" . $filename)) {
                 $mtime = filemtime($path . "/" . $filename);
-                $regenerate = array_reduce($mtimes[$media], function($u, $v) use ($mtime) { 
+                $regenerate = array_reduce($mtimes[$media], function($u, $v) use ($mtime) {
                     return $u || $v > $mtime;
                 }, false);
             }

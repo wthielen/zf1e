@@ -71,6 +71,12 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
         $filename = sha1($hash) . ".js";
         $cachedir = $this->_minifier->getCacheDir();
         $path = $_SERVER['DOCUMENT_ROOT'] . $cachedir;
+
+        // check directory exists. if not, create it
+        if (!file_exists($path)) {
+            mkdir($path, 0775, true);
+        }
+
         if (file_exists($path . "/" . $filename)) {
             $mtime = filemtime($path . "/" . $filename);
             $regenerate = array_reduce($mtimes, function($u, $v) use ($mtime) {
