@@ -33,7 +33,7 @@ abstract class ZFE_Enum_Abstract
 {
     public static function exists($val)
     {
-        return in_array($val, static::getKeys());
+        return in_array($val, static::getKeys(), true);
     }
 
     public static function getKeys()
