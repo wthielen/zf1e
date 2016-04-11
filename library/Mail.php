@@ -9,40 +9,91 @@
  */
 class ZFE_Mail extends Zend_Mail
 {
-    protected $_charset = 'UTF-8';
     protected $_view;
     protected $_layout;
     protected $_layoutScript;
     protected $_template;
-    protected $_language;
-    protected $_version;
+    // protected $_language;
+    // protected $_defaultLanguage;
+    // protected $_version;
+    // protected $_charset = 'UTF-8';
+
+    protected $_options;
 
     static protected $_defaultVersion;
 
-    public function __construct()
+    public function __construct($options=array()) //Zend_Layout $layout, Zend_View_Interface $view, ?
     {
-        $this->_view = new Zend_View();
+        // TODO remove these once we are passing these values in
+        if (!isset($options['language'])) {
+            $options['language'] = ZFE_Core::getLanguage();
+        }
+        if (!isset($options['defaultLanguage'])) { // passes
+            $ml = Zend_Registry::get('ZFE_MultiLanguage');
+            $options['defaultLanguage'] = $ml->getDefault();
+        }
+        if (!isset($options['layoutPath'])) {
+            $options['layoutPath'] = APPLICATION_PATH . '/emails/layouts';
+        }
+        if (!isset($options['scriptPath'])) {
+            $options['scriptPath'] = APPLICATION_PATH . '/emails/scripts';
+        }
+        // set defaults
+        // TODO remove layoutPath, scriptPath, defaultLayout as these strictly be passed in
+        $options = array_merge(array(
+            'defaultLayout' => 'default',
+            'charset' => 'UTF-8',
+        ), $options);
 
-        // set the base directory of where our emails scripts are located
-        $this->_view->setScriptPath(APPLICATION_PATH . "/emails/scripts");
-
-        $this->_view->addHelperPath(ZFE_Environment::getLibraryPath() . "/View/Helper", 'ZFE_View_Helper');
-        $this->_view->addHelperPath(ZFE_Environment::getLibraryPath() . "/View/Helper", 'ACQ_View_Helper');
-
-        $module = ZFE_Environment::getModuleName();
-        if ($module !== 'default') {
-            $cls = ucfirst(strtolower($module)) . '_View_Helper';
-            $this->_view->addHelperPath(ZFE_Environment::getModulePath() . "/views/helpers", $cls);
+        // check layoutPath has been set
+        if (!isset($options['layoutPath'])) {
+            throw new Exception('Layout path not set or not found');
         }
 
+        // check scriptPath has been set
+        if (!isset($options['scriptPath'])) {
+            throw new Exception('Script path not set or not found');
+        }
+
+
+        // set the layout for the emails. this will be our lovely html header and
+        // footers making our emails look warm and fuzzy :)
         $this->_layout = new Zend_Layout();
-        $this->_layout->setLayoutPath(APPLICATION_PATH . "/emails/layouts");
-        $this->_layoutScript = 'default';
-        $this->_layout->setLayout($this->_layoutScript);
+        $this->_layout->setLayoutPath($options['layoutPath']);
+        if (isset($options['defaultLayout'])) { // TODO is this optional? should it be?
+            $this->_layoutScript = $options['defaultLayout'];
+            $this->_layout->setLayout($this->_layoutScript);
+        }
 
-        $this->_version = self::$_defaultVersion;
+        // set View
+        $this->_view = new Zend_View();
+        $this->_view->setScriptPath($options['scriptPath']);
 
-        $this->_language = ZFE_Core::getLanguage();
+        // set options
+        $this->_options = $options;
+
+        // $this->_view = new Zend_View();
+        //
+        // // set the base directory of where our emails scripts are located
+        // $this->_view->setScriptPath(APPLICATION_PATH . "/emails/scripts");
+        //
+        // $this->_view->addHelperPath(ZFE_Environment::getLibraryPath() . "/View/Helper", 'ZFE_View_Helper');
+        // $this->_view->addHelperPath(ZFE_Environment::getLibraryPath() . "/View/Helper", 'ACQ_View_Helper');
+        //
+        // $module = ZFE_Environment::getModuleName();
+        // if ($module !== 'default') {
+        //     $cls = ucfirst(strtolower($module)) . '_View_Helper';
+        //     $this->_view->addHelperPath(ZFE_Environment::getModulePath() . "/views/helpers", $cls);
+        // }
+        //
+        // $this->_layout = new Zend_Layout();
+        // $this->_layout->setLayoutPath(APPLICATION_PATH . "/emails/layouts");
+        // $this->_layoutScript = 'default';
+        // $this->_layout->setLayout($this->_layoutScript);
+        //
+        // $this->_version = self::$_defaultVersion;
+        //
+        // $this->_options['language'] = ZFE_Core::getLanguage();
     }
 
     public function setLayout($layout)
@@ -68,7 +119,7 @@ class ZFE_Mail extends Zend_Mail
 
     public function setLanguage($language)
     {
-        $this->_language = $language;
+        $this->_options['language'] = $language;
 
         return $this;
     }
@@ -123,7 +174,7 @@ class ZFE_Mail extends Zend_Mail
 
             // Since we are trying to generate it the ACQ_Mail way, it shouldn't be empty
             if (empty($html)) {
-                throw new ACQ_Exception("Empty HTML template for {$this->_template}. Could not send e-mail.");
+                throw new Exception("Empty HTML template for {$this->_template}. Could not send e-mail.");
             }
 
             $this->setBodyHtml($html);
@@ -150,7 +201,7 @@ class ZFE_Mail extends Zend_Mail
                 // clone Zend_View as we will use it twice (plain text template, and html template)
                 // and set the view parameters
                 $view = clone $this->_view;
-                $view->language = $this->_language;
+                $view->language = $this->_options['language'];
 
                 // render the email template with Zend_View to generate the body text
                 $text = $view->render($textScript);
@@ -177,7 +228,7 @@ class ZFE_Mail extends Zend_Mail
                 // clone Zend_View as we will use it twice (plain text template, and html template)
                 // and set the view parameters
                 $view = clone $this->_view;
-                $view->language = $this->_language;
+                $view->language = $this->_options['language'];
 
                 // Set the layout based on available versions
                 if (!empty($this->_version) && $this->_layoutExists($this->_layoutScript . '-' . $this->_version)) {
@@ -220,19 +271,19 @@ class ZFE_Mail extends Zend_Mail
      */
     protected function _findTextScript()
     {
-        $ml = Zend_Registry::get('ZFE_MultiLanguage');
+        // $ml = Zend_Registry::get('ZFE_MultiLanguage');
 
         // put each possible script in the $scripts array in order of
         // peference (e.g. first look for current languages, then default, ..)
         $textScript = false;
         $scripts = array();
         if (!empty($this->_version)) {
-            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_language . '.phtml';
-            $scripts[] = $this->_template . '-' . $this->_version . '-' . $ml->getDefault() . '.phtml';
+            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_options['language'] . '.phtml';
+            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_options['defaultLanguage'] . '.phtml';
             $scripts[] = $this->_template . '-' . $this->_version . '.phtml';
         }
-        $scripts[] = $this->_template . '-' . $this->_language . '.phtml';
-        $scripts[] = $this->_template . '-' . $ml->getDefault() . '.phtml';
+        $scripts[] = $this->_template . '-' . $this->_options['language'] . '.phtml';
+        $scripts[] = $this->_template . '-' . $this->_options['defaultLanguage'] . '.phtml';
         $scripts[] = $this->_template . '.phtml';
 
         // loop through each script in order of preference, set as the
@@ -254,19 +305,19 @@ class ZFE_Mail extends Zend_Mail
      */
     protected function _findHtmlScript()
     {
-        $ml = Zend_Registry::get('ZFE_MultiLanguage');
+        // $ml = Zend_Registry::get('ZFE_MultiLanguage');
 
         // put each possible script in the $scripts array in order of
         // peference (e.g. first look for current languages, then default, ..)
         $htmlScript = false;
         $scripts = array();
         if (!empty($this->_version)) {
-            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_language . '.html.phtml';
-            $scripts[] = $this->_template . '-' . $this->_version . '-' . $ml->getDefault() . '.html.phtml';
+            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_options['language'] . '.html.phtml';
+            $scripts[] = $this->_template . '-' . $this->_version . '-' . $this->_options['defaultLanguage'] . '.html.phtml';
             $scripts[] = $this->_template . '-' . $this->_version . '.html.phtml';
         }
-        $scripts[] = $this->_template . '-' . $this->_language . '.html.phtml';
-        $scripts[] = $this->_template . '-' . $ml->getDefault() . '.html.phtml';
+        $scripts[] = $this->_template . '-' . $this->_options['language'] . '.html.phtml';
+        $scripts[] = $this->_template . '-' . $this->_options['defaultLanguage'] . '.html.phtml';
         $scripts[] = $this->_template . '.html.phtml';
 
         // loop through each script in order of preference, set as the
