@@ -6,6 +6,7 @@
  * convention.
  *
  * TODO: Add "inline images" option (http://stackoverflow.com/questions/1087933/how-to-send-an-email-with-inline-images-using-zend-framework)
+ * TODO override send with send(true) optional param that clears all the previous send stuff (e.g. subject)
  */
 class ZFE_Mail extends Zend_Mail
 {
@@ -131,6 +132,22 @@ class ZFE_Mail extends Zend_Mail
         return $this;
     }
 
+    /**
+     * To allow this class to be used as a singleton we perhaps need an option
+     * to reset the params prior to mailing
+     */
+    public function resetParams()
+    {
+        $this->clearSubject();
+        $this->clearRecipients();
+        $this->clearFrom();
+
+        // clear the body
+        $this->_bodyText = false;
+
+        return $this;
+    }
+
     static public function setDefaultVersion($version)
     {
         self::$_defaultVersion = $version;
@@ -205,6 +222,7 @@ class ZFE_Mail extends Zend_Mail
 
                 // render the email template with Zend_View to generate the body text
                 $text = $view->render($textScript);
+
             }
         }
 
