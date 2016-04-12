@@ -18,14 +18,22 @@
  */
 class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 {
+    /**
+     * @var array
+     */
     protected static $style = array(
         'first' => '&lt;&lt;',
         'prev' => '&lt;',
         'next' => '&gt;',
-        'last' => '&gt;&gt;'
+        'last' => '&gt;&gt;',
     );
 
-    public function paginator($pageInfo, $options = array())
+    /**
+     * @param array $pageInfo
+     * @param array $options
+     * @return string
+     */
+    public function paginator(array $pageInfo, array $options = array())
     {
         // TODO: find a more universal method
         try {
@@ -38,17 +46,18 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
             'maxEntries' => 11,
             'inputField' => false,
             'x_of_y_text' => 'Page %s of %d',
-            'url' => $currentUrl
+            'url' => $currentUrl,
+            'urlParams' => array()
         );
 
         $options = array_merge($default, $options);
         $baseUrl = $options['url'];
-
+        $urlParams = $options['urlParams'];
         $useInput = $options['inputField'];
 
         // Some handy booleans
-        $firstPage = $pageInfo['page'] == 1;
-        $lastPage = $pageInfo['page'] == $pageInfo['pages'];
+        $isFirstPage = $pageInfo['page'] == 1;
+        $isLastPage = $pageInfo['page'] == $pageInfo['pages'];
 
         $halfPoint = floor($options['maxEntries'] / 2);
         $start = $pageInfo['page'] > $halfPoint ? $pageInfo['page'] - $halfPoint : 1;
@@ -61,14 +70,14 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 
         // If not on the first page, show the "go to first page" and the "go to
         // previous page" links.
-        if (!$firstPage) {
+        if (!$isFirstPage) {
             $html .= '<li class="first">';
-            $url = $baseUrl . '?' . http_build_query(array('p' => 1));
+            $url = $baseUrl . '?' . http_build_query(array_merge($urlParams, array('p' => 1)));
             $html .= '<a href="' . $url . '" data-page="1" rel="nofollow">' . static::$style['first'] . '</a>';
             $html .= '</li>';
 
             $html .= '<li class="previous">';
-            $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['page'] - 1));
+            $url = $baseUrl . '?' . http_build_query(array_merge($urlParams, array('p' => $pageInfo['page'] - 1)));
             $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] - 1) . '" rel="nofollow">' . static::$style['prev'] . '</a>';
             $html .= '</li>';
 
@@ -84,7 +93,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         } else {
             // Add the page number links, and make the current one active
             for($page = $start; $page <= $end; $page++) {
-                $url = $baseUrl . '?' . http_build_query(array('p' => $page));
+                $url = $baseUrl . '?' . http_build_query(array_merge($urlParams, array('p' => $page)));
 
                 $cls = array();
                 if ($page == $pageInfo['page']) $cls[] = 'active';
@@ -97,11 +106,11 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 
         // If not on the last page, show the "go to next page" and "go to last
         // page" links.
-        if (!$lastPage) {
+        if (!$isLastPage) {
             if (!$useInput && $end < $pageInfo['pages']) $html .= '<li class="disabled"><span>...</span></li>';
 
             $html .= '<li class="next">';
-            $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['page'] + 1));
+            $url = $baseUrl . '?' . http_build_query(array_merge($urlParams, array('p' => $pageInfo['page'] + 1)));
             $html .= '<a href="' . $url . '" data-page="' . ($pageInfo['page'] + 1) . '" rel="nofollow">' . static::$style['next'] . '</a>';
             $html .= '</li>';
 
