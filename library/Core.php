@@ -145,18 +145,49 @@ abstract class ZFE_Core
      * ZFE_Core::cache("result_of_heavy_calc", function() use ($x, $y) {
      *     // Do something heavy with $x and $y
      *     $ret = ... $x ... $y ...;
-     *
      *     return $ret;
      * }, 3600);
      *
      * To bypass the cache, set the fourth parameter to be true.
+     *
+     * Fifth parameter $earlyRecache particularly recommended for code that creates extra processes
+     * (e.g. internal queries) or have external quota (e.g. Analytics).
+     *
+     * Discussion:
+     * @link MW wiki /index.php/Discussion:Cache
+     *
+     * @param      string    $cache_id      Unique key identifying the cache entry
+     * @param      Function  $fn            Code returning the value to cache
+     * @param      integer   $expire        Seconds before the cache expires
+     * @param      boolean   $bypass        Ignore any cached value (useful to clear key or test code)
+     * @param      boolean   $earlyRecache  [Experimental] Prevent post-expiry rush by having one client re-cache ahead of time [Experimental]
+     *
+     * @return     Function
      */
-    public static function cache($cache_id, $fn, $expire = null, $bypass = false)
+    public static function cache($cache_id, $fn, $expire = null, $bypass = false, $earlyRecache = false)
     {
         $cache = Zend_Registry::get('Zend_Cache');
+
+        // No cache backend: just run the function
         if (is_null($cache)) return $fn();
 
-        if (($ret = $cache->load($cache_id)) === false || $bypass) {
+        // Early recache, if the key exists and is about to expire
+        if ($earlyRecache) {
+            $backend = $cache->getBackend();
+            $keyMeta = $backend->getMetadatas($cache_id);
+            $remainingTime = $keyMeta['expire'] - time();
+            // time 90% used up - might be safer to let the user choose the duration? Potential issues with low $expire or slow code.
+            if ($remainingTime < ($expire / 10)) {
+                // slight race condition, more than one client might run this code. It is unlikely, and should not be a major issue. See wiki for discussion on how to optimize this.
+                // $expire is very long. If all goes well, the selected client will ->save() and reset the timestamp. If not, we might be in trouble - safer to let the user choose the duration?
+                $backend->touch($cache_id, $expire); // extend lifetime, to give self time to recalculate while others use the currently cached version
+                $bypass = true; // force re-calculation
+                // Could adjust "duration" to start from previous expiration, but it probably doesn't matter that much
+            }
+        }
+
+        // Standard load / save
+        if ($bypass || ($ret = $cache->load($cache_id)) === false) {
             $ret = $fn();
             $cache->save($ret, $cache_id, array(), $expire);
         }
