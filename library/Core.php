@@ -235,6 +235,22 @@ abstract class ZFE_Core
     }
 
     /**
+     * Safer way to get array's element as integer
+     *
+     * @param array $array
+     * @param string $index
+     * @return int
+     */
+    public static function intval(array $array, $index)
+    {
+        if (isset($array[$index])) {
+            return (int) $array[$index];
+        } else {
+            return 0;
+        }
+    }
+    
+    /**
      * The private function _dump() that does the actual dump for dump().
      * It adds the filename and linenumber from the backtrace in pretty-print
      * format, so that you can quickly see where you left your dump() calls.
