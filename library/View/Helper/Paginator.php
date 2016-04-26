@@ -33,7 +33,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
      * @param array $options
      * @return string
      */
-    public function paginator(array $pageInfo, array $options = array())
+    public function paginator($pageInfo, array $options = array())
     {
         // TODO: find a more universal method
         try {
