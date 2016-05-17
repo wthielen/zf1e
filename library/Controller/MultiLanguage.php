@@ -45,6 +45,11 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
         $languages = $resource->getLanguages();
         unset($languages[$lang]);
         foreach($languages as $_lang => $language) {
+            
+            //https://support.google.com/webmasters/answer/189077?hl=en
+            if($_lang == 'zh_Hans') $_lang = 'zh-Hans';
+            if($_lang == 'zh_Hant') $_lang = 'zh-Hant';
+
             $this->view->headLink()->appendAlternate(
                 $mlPlugin->composeUrl($_lang), 'text/html', '', array('hreflang' => $_lang)
             );
