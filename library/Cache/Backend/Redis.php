@@ -23,12 +23,16 @@ class ZFE_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_B
     /**
      * Default Values
      */
-    const DEFAULT_HOST = '127.0.0.1';
-    const DEFAULT_PORT =  6379;
-    const DEFAULT_TIMEOUT = 0;
+    const DEFAULT_HOST       = '127.0.0.1';
+    const DEFAULT_PORT       =  6379;
+    const DEFAULT_SOCKET     = '/tmp/redis-6379.sock';
+    const CONN_TCP           = 'tcp';
+    const CONN_SOCKET        = 'socket';
+    const DEFAULT_CONNMODE   = self::CONN_TCP;
+    const DEFAULT_TIMEOUT    = 0;
     const DEFAULT_PERSISTENT = false;
-    const DEFAULT_DB = 0;
-    const DEFAULT_PREFIX = 'cache:zend:';
+    const DEFAULT_DB         = 0;
+    const DEFAULT_PREFIX     = 'cache:zend:';
 
     /**
      * Log message
@@ -56,6 +60,8 @@ class ZFE_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_B
     protected $_options = array(
         'host'        => self::DEFAULT_HOST,
         'port'        => self::DEFAULT_PORT,
+        'socket'      => self::DEFAULT_SOCKET,
+        'connmode'    => self::DEFAULT_CONNMODE,
         'timeout'     => self::DEFAULT_TIMEOUT,
         'persistent'  => false,
         'db'          => self::DEFAULT_DB,
@@ -85,6 +91,7 @@ class ZFE_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_B
      */
     public function __construct(array $options = array())
     {
+        if (!empty($options['socket'])) { $options['connmode'] = self::CONN_SOCKET; }
         if (!extension_loaded('redis')) {
             Zend_Cache::throwException('The redis extension must be loaded for using this backend !');
         }
@@ -386,11 +393,17 @@ class ZFE_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_B
         if (!$this->_connected) {
             try {
                 $method = $this->_options['persistent'] ? 'pconnect' : 'connect';
-                if ($this->_options['timeout'] > 0) {
-                    $this->_redis->$method($this->_options['host'], $this->_options['port'], $this->_options['timeout']);
+
+                if ($this->_options['connmode'] == self::CONN_SOCKET && !empty($this->_options['socket'])) {
+                    $this->_redis->$method($this->_options['socket']);
                 } else {
-                    $this->_redis->$method($this->_options['host'], $this->_options['port']);
+                    if ($this->_options['timeout'] > 0) {
+                        $this->_redis->$method($this->_options['host'], $this->_options['port'], $this->_options['timeout']);
+                    } else {
+                        $this->_redis->$method($this->_options['host'], $this->_options['port']);
+                    }
                 }
+
                 if (!empty($this->_options['prefix'])) {
                     $this->_redis->setOption(Redis::OPT_PREFIX, $this->_options['prefix']);
                 }

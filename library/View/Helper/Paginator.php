@@ -33,7 +33,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
      * @param array $options
      * @return string
      */
-    public function paginator(array $pageInfo, array $options = array())
+    public function paginator($pageInfo, array $options = array())
     {
         // TODO: find a more universal method
         try {
@@ -41,13 +41,15 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
         } catch (Exception $e) {
             $currentUrl = Zend_Controller_Front::getInstance()->getRequest()->getRequestUri(); // loses custom routes, keeps GET params (which interfere with the ?p= param)
         }
+
         //$currentUrl = ""; // does not work when inserted in a different page
         $default = array(
             'maxEntries' => 11,
             'inputField' => false,
             'x_of_y_text' => 'Page %s of %d',
             'url' => $currentUrl,
-            'urlParams' => array()
+            'urlParams' => array(),
+            'hide_when_only_one_page' => false,
         );
 
         $options = array_merge($default, $options);
@@ -65,6 +67,11 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
 
         if ($end > $pageInfo['pages']) $end = $pageInfo['pages'];
         if ($end - $start < $options['maxEntries']) $start = max(1, $end - $options['maxEntries'] + 1);
+
+        // if $pageInfo['pages'] is only 1, then we may hide the page
+        if ($options['hide_when_only_one_page'] and $pageInfo['pages'] <= 1) {
+            return '&nbsp;';
+        }
 
         $html = '<ul class="pagination">';
 

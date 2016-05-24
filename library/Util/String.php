@@ -85,7 +85,7 @@ abstract class ZFE_Util_String
 
         if (mb_strpos('.!?。？！', mb_substr($ret, mb_strlen($ret) - 1)) === false) {
             $ret .= $ellipsis;
-        } 
+        }
 
         return $ret;
     }
@@ -168,5 +168,35 @@ abstract class ZFE_Util_String
         $result = @unserialize($data);
 
         return ($result !== false) || ($result === false && $data === serialize(false)) ? $result : $data;
+    }
+
+    /**
+     * Will count words in a text. Designed to mimic ckeditor's wordcount plugin so
+     * that we can perform the same count in php too
+     * @param string $content The string to count words
+     */
+    public static function countWords($content)
+    {
+        $content = strip_tags($content);
+        $content = str_replace('/(\\r\\n|\\n|\\r)/gm', ' ', $content);
+        $content = str_replace('/(&nbsp;)/g', ' ', $content);
+        $content = trim($content);
+
+        return (strlen($content) == 0) ? 0 : count(preg_split('/\\s+/', $content));
+    }
+
+    /**
+     * Will count chars in a text. Designed to mimic ckeditor's charcount plugin so
+     * that we can perform the same count in php too. Best for asian languages
+     * @param string $content The string to count chars
+     */
+    public static function countCharacters($content)
+    {
+        $content = strip_tags($content);
+        $content = str_replace('/(\\r\\n|\\n|\\r)/gm', ' ', $content);
+        $content = str_replace('/(&nbsp;)/g', ' ', $content);
+        $content = trim($content);
+
+        return mb_strlen($content);
     }
 }
