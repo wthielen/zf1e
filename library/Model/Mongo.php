@@ -1,654 +1,313 @@
 <?php
 
 /**
- * A base model class for classes which become Mongo documents.
+ * Because ACQ objects will have extra meta-data as subdocuments, we have to
+ * separate the actual data model into a 'model' subdocument. Some ZFE_Model_Mongo
+ * functions need to be aware of this and are therefore overloaded here. These
+ * functions are get(), save() and map().
  */
-class ZFE_Model_Mongo extends ZFE_Model_Base
+class ACQ_Model_Mongo extends ZFE_Model_Mongo
 {
-    protected $_id = null;
-    protected $_isPersistable = true;
-
-    protected static $resource;
-    protected static $db;
-    protected static $collection;
+    protected static $modelKey = 'model';
 
     /**
-     * Tells PHP which field to use as the identifier field.
-     * To keep it simple, this mini-ORM does not support compound
-     * primary keys.
+     * Overload the get() function
      *
-     * The process cache is to quickly refer to earlier loaded entities
-     * when referring to them with their identifiers.
-     */
-    protected static $_identifierField = 'id';
-    protected static $_cache;
-
-    /**
-     * Tracking what has been changed
-     *
-     * This is used by the save function to call on*Updated() functions.
-     */
-    protected $_changedFields = array();
-
-    /**
-     * Mongo constructor, that calls the getDatabase() function, which in
-     * turn initializes the Mongo application plugin resource.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-
-        static::getDatabase();
-    }
-
-    /**
-     * Do some conversions for some types
-     */
-    public function __set($key, $val)
-    {
-        // If it is a Mongo entity, convert it to its reference
-        if ($val instanceof ZFE_Model_Mongo) {
-            $val = $val->getReference();
-        }
-
-        // If it is a DateTime, convert it to MongoDate
-        if ($val instanceof DateTime) {
-            $val = new MongoDate($val->getTimestamp());
-        }
-
-        // If it is an array of Mongo entities or DateTimes
-        if (is_array($val)) {
-            $_val = array();
-            foreach($val as $i => $v) {
-                if ($v instanceof ZFE_Model_Mongo) $v = $v->getReference();
-                if ($v instanceof DateTime) $v = new MongoDate($v->getTimestamp());
-                $_val[$i] = $v;
-            }
-            $val = $_val;
-        }
-
-        $doCompare = !in_array($this->_status, array(self::STATUS_INITIALIZING, self::STATUS_IMPORT));
-
-        // Do not use $this->$key here because $val is already translated so we don't need
-        // back-translate from $this::__get
-        if ($doCompare) $oldValue = parent::__get($key);
-        parent::__set($key, $val);
-
-        if ($doCompare && $oldValue !== $val) {
-            if (!isset($this->_changedFields[$key])) $this->_changedFields[$key] = array();
-            $this->_changedFields[$key][] = $oldValue;
-        }
-    }
-
-    /**
-     * If the accessed data entry is a MongoDB reference, fetch the
-     * reference data and turn it into an object of the reference data
-     * class.
-     *
-     * By default, it will create an object with the class name based on the
-     * reference collection, but if it is mentioned in the mapping configuration,
-     * it will use the mapping's setting instead. If the class does not exist,
-     * an explanatory exception will be thrown.
-     *
-     * Other conversions: MongoDate to DateTime
-     *
-     * @param string $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        $val = parent::__get($key);
-
-        if ($val === null && !isset($this->_data[$key])) {
-            return null;
-        }
-
-        if (MongoDBRef::isRef($val)) {
-            $objectId = (string) $val['$id'];
-            $object = ZFE_Model_RefCache::get($objectId, $key);
-            if ($object === null) {
-                $object = static::getObject($val);
-                ZFE_Model_RefCache::set($objectId, $key, $object);
-            }
-
-            return $object;
-        } elseif ($val instanceof MongoDate) {
-            $val = static::getDate($val);
-        }
-
-        return $val;
-    }
-
-    /**
-     * Simulates a sequence generator as found in Oracle, and
-     * MySQL's AUTO_INCREMENT.
-     *
-     * CAVEAT: when you import data into MongoDB, make sure the
-     * ID sequence is set for that collection in your import script!
-     */
-    public static function getNextId()
-    {
-        $sequenceCollection = static::getDatabase()->sequences;
-
-        $nextIdRecord = $sequenceCollection->findAndModify(array(),
-            array(
-                '$inc' => array(static::$collection => 1)
-            ),
-            array(static::$collection => 1),
-            array('upsert' => true, 'new' => true)
-        );
-
-        return $nextIdRecord[static::$collection];
-    }
-
-    /**
-     * Gets the maximum value of a field
-     */
-    public static function getMaximum($field, $filter = array())
-    {
-        $pipeline = array();
-        if (!empty($filter)) $pipeline[] = array('$match' => $filter);
-
-        $pipeline[] = array('$group' => array(
-            '_id' => "",
-            'max' => array('$max' => '$' . $field)
-        ));
-
-        $max = static::aggregate($pipeline);
-        $value = count($max) ? $max[0]['max'] : null;
-
-        return $value;
-    }
-
-    /**
-     * Converts the object into an array.
-     *
-     * It will convert sub-objects as well, up to $levels levels.
-     *
-     * Do not allow for full sub-object conversion because this will likely end up
-     * in a deadlock or a memory overflow. Best to pass a $levels argument to keep
-     * it controlled.
-     */
-    public function toArray($keys = null, $levels = 0)
-    {
-        if (empty($keys)) $keys = array_keys($this->_data);
-
-        $ret = array();
-        foreach($keys as $key) {
-            $val = isset($this->_data[$key]) ? $this->getTranslation($key) : $this->$key;
-
-            if ($levels > 0) {
-                if ($val instanceof ZFE_Model_Mongo) $val = $val->toArray(null, $levels - 1);
-
-                if (is_array($val)) {
-                    foreach($val as &$v) {
-                        if ($v instanceof ZFE_Model_Mongo) $v = $v->toArray(null, $levels - 1);
-                    }
-                }
-            }
-
-            $ret[$key] = $val;
-        }
-
-        return $ret;
-    }
-
-    public function toSubdocument()
-    {
-        $ret = $this->_data;
-
-        foreach($ret as $key => $val) {
-            if ($val instanceof ZFE_Model_Mongo) $ret[$key] = $val->getReference();
-            if ($val instanceof DateTime) $ret[$key] = new MongoDate($val->getTimestamp());
-        }
-
-        return $ret;
-    }
-
-    final public static function getDate(MongoDate $dt)
-    {
-        $val = new DateTime('@' . $dt->sec);
-        $val->setTimeZone(new DateTimeZone(date_default_timezone_get()));
-        return $val;
-    }
-
-    public static function getObject($ref)
-    {
-        $obj = $ref;
-        if (MongoDBRef::isRef($ref)) {
-            $cls = self::$resource->getClass($ref['$ref']);
-            if (!class_exists($cls)) {
-                throw new ZFE_Model_Mongo_Exception(
-                    "There is no model for the referred entity '" . $ref['$ref'] . "'.
-                    Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
-                );
-            }
-
-            $obj = MongoDBRef::get(static::getDatabase(), $ref);
-            $obj = is_null($obj) ? $obj : $cls::map($obj);
-        }
-
-        return $obj;
-    }
-
-    public function setTranslation($key, $val, $lang)
-    {
-        // If it is a Mongo entity, convert it to its reference
-        if ($val instanceof ZFE_Model_Mongo) {
-            $val = $val->getReference();
-        }
-
-        // If it is a DateTime, convert it to MongoDate
-        if ($val instanceof DateTime) {
-            $val = new MongoDate($val->getTimestamp());
-        }
-
-        parent::setTranslation($key, $val, $lang);
-    }
-
-    public function getTranslation($key, $lang = null)
-    {
-        $translation = parent::getTranslation($key, $lang);
-
-        return static::getObject($translation);
-    }
-
-    /**
-     * Gets the Mongo collection corresponding to this model
-     */
-    public static function getCollection()
-    {
-        if (is_null(static::$collection)) {
-            throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
-        }
-
-        return static::getDatabase()->{static::$collection};
-    }
-
-    final public static function getGridFS()
-    {
-        return static::getDatabase()->getGridFS(static::$collection);
-    }
-
-    /**
-     * Registers the database adapter in this model.
-     *
-     * Because the constructor calls this function, nothing needs to be done in the
-     * application's bootstrap. Just create a Mongo document object :)
-     */
-    final public static function getDatabase()
-    {
-        if (null === static::$db) {
-            static::$db = static::getResource()->getDatabase();
-        }
-
-        return static::$db;
-    }
-
-    /**
-     * A wrapper around execute() that will throw a PHP exception when something goes
-     * wrong here.
-     */
-    final public static function execute($code, $args = array())
-    {
-        $db = static::getDatabase();
-
-        $result = $db->execute($code, $args);
-        if ($result['ok'] == 0) {
-            throw new ZFE_Model_Mongo_Exception($result['errmsg'], $result['code']);
-        }
-
-        return $result['retval'];
-    }
-
-    /**
-     * Registers the MongoDB application plugin resource and initializes it, when a
-     * connection is requested. It stores the plugin resource as a static entry in
-     * the model.
-     */
-    final public static function getResource()
-    {
-        if (null === self::$resource) {
-            self::$resource = ZFE_Environment::getResource('Mongo');
-        }
-
-        return self::$resource;
-    }
-
-    /**
-     * Forwards some function calls to the MongoCollection functions
-     */
-    public static function __callStatic($name, $args)
-    {
-        $whitelist = array(
-            'findOne',
-            'findAndModify',
-            'remove',
-            'drop',
-            'aggregate',
-            'distinct'
-        );
-
-        if (!in_array($name, $whitelist)) {
-            throw new ZFE_Model_Mongo_Exception("Unknown static function $name");
-        }
-
-        $ret = call_user_func_array(array(static::getCollection(), $name), $args);
-
-        // Do some conversion if needed
-        if ($ret) {
-            switch($name) {
-            case 'findOne':
-                $ret = static::map($ret);
-                break;
-            case 'aggregate':
-                if ($ret['ok'] == 0) throw new ZFE_Model_Mongo_Exception($ret['errmsg'], $ret['code']);
-                $ret = $ret['result'];
-                break;
-            case 'distinct':
-                foreach($ret as &$val) {
-                    if (MongoDBRef::isRef($val)) $val = static::getObject($val);
-                }
-                break;
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Gets an entry from the database, given the identifier(s) and the field name
-     *
-     * If no field name is given, the stored _identifierField is used.
+     * Because in ACQ_Model_Mongo, the actual model data is in the 'model'
+     * subdocument, we need to update the identifier field to 'model.id' in this
+     * function to be able to select the documents.
      */
     public static function get($id, $field = null)
     {
-        $field = is_null($field) ? static::$_identifierField : $field;
-        $class = get_called_class();
-        if (!isset(self::$_cache[$class])) self::$_cache[$class] = array();
-
-        // Multiple parameters case:
-        // Checks if there are any IDs not in the cache, which we need
-        // to load from the database. If there are any, it fetches them using
-        // one find() call, and stores the objects in the process cache.
-        // Then it returns a slice of the cache with the requested IDs.
-        //
-        // TODO $field is not passed to getIdentifier because here it is "model.id"
-        // for another project, which is the field in Mongo, but in _data it is "id".
-        // Not sure what to do here.
-        if (is_array($id)) {
-            $toFetch = array_values(array_diff($id, array_keys(self::$_cache[$class])));
-            if (count($toFetch)) {
-                $fetched = static::find(array('query' => array($field => $toFetch)));
-
-                foreach($fetched['result'] as $entry) {
-                    self::$_cache[$class][$entry->getIdentifier()] = $entry;
-                }
-            }
-
-            return array_intersect_key(self::$_cache[$class], array_flip($id));
+        if ($field === null) {
+            $field = static::$_identifierField;
+        }
+        if (!empty(static::$modelKey)) {
+            $field = static::$modelKey . '.' . $field;
         }
 
-        // Single parameter case
-        // Simply fetch it from the database and store it in the cache if
-        // it is not already stored in the cache, and then return from cache.
-        if (!isset(self::$_cache[$class][$id])) {
-            $found = static::findOne(array('query' => array($field => $id)));
-            if ($found) self::$_cache[$class][$id] = $found;
-        }
-
-        return isset(self::$_cache[$class][$id]) ? self::$_cache[$class][$id] : null;
+        return parent::get($id, $field);
     }
 
     /**
-     * Returns the identifier of this entry using the
-     * protected $_identifierField field
+     * Overload the getMaximum() function
+     *
+     * Because in ACQ_Model_Mongo, the actual model data is in the 'model'
+     * subdocument, we need to update the requested field to 'model.' . $field
+     * in this function to be able to select the field.
      */
-    public function getIdentifier($field = null)
+    public static function getMaximum($field, $filter = array())
     {
-        $field = is_null($field) ? static::$_identifierField : $field;
+        if (empty(static::$modelKey)) return parent::getMaximum($field, $filter);
 
-        if (isset($this->_data[$field])) {
-            return $this->_data[$field];
-        }
+        $field = static::$modelKey . '.' . $field;
 
-        return $this->getMongoIdentifier();
+        return parent::getMaximum($field, $filter);
     }
 
     /**
-     * Returns the Mongo identifier
-     * @return string?
-     */
-    public function getMongoIdentifier()
-    {
-        return $this->_id;
-    }
-
-    /**
-     * Convert $query items for monog. Eg. convert {'key': [values]} to {'key': '$in': [values]} and
-     * convert objects to their mongo ID
-     * @param array $query ACQ mongo query to be converted
-     * @return array $query PHP mongo ready query
-     */
-    protected static function _convertQuery($query)
-    {
-        // Replace ZFE_Model_Mongo instances by their references
-        $replaceWithReference = function(&$val) {
-            $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
-        };
-
-        array_walk($query, function(&$val, $key) use($replaceWithReference) {
-            if ($key[0] == '$') return;
-
-            // Special case to take MongoIds out of references
-            if ($key == '_id' && is_array($val)) {
-                // If it is a single reference, take out the ID and continue
-                if (MongoDBRef::isRef($val)) {
-                    $val = $val['$id'];
-                    return;
-                }
-
-                // Create an $in operation with an array of IDs
-                $val = array('$in' => array_map(function($ref) {
-                    return MongoDBRef::isRef($ref) ? $ref['$id'] : $ref;
-                }, $val));
-
-                return;
-            }
-
-            if (is_array($val)) {
-                $keys = array_keys($val);
-                $mongoOperators = array_reduce($keys, function($u, $v) {
-                    return $u || $v[0] == '$';
-                }, false);
-
-                if (!$mongoOperators) {
-                    array_walk($val, $replaceWithReference);
-
-                    // MB UPDATE: I think this has to be {'$in': ["en", "ja"... rather than {'$in': {"1":"ja","2":"fr",..
-                    // which previously just '$in' => $val was creating, wrong array for $in
-                    // anyway, putting a note for now encase it breaks anything :)
-                    $val = array('$in' => array_values($val));
-                    // $val = array('$in' => $val);
-                }
-            } else {
-                $replaceWithReference($val);
-            }
-        });
-
-        return $query;
-    }
-
-    /**
-     * To be able to paginate results, I have taken out the 'find' call and made it
-     * its own function. It returns an array containing the result set, and the
-     * total number of results, useful for pagination
-     */
-    public static function find($args = array())
-    {
-        $default = array('query' => array(), 'fields' => array());
-        $args = array_merge($default, $args);
-
-        $args['query'] = static::_convertQuery($args['query']);
-
-        // Add projection keys for $meta sort entries
-        if (isset($args['sort']) && is_array($args['sort'])) {
-            foreach($args['sort'] as $fld => $entry) {
-                if (is_array($entry) && isset($entry['$meta'])) {
-                    $args['fields'][$fld] = $entry;
-                }
-            }
-        }
-
-        $cursor = static::getCollection()->find($args['query'], $args['fields']);
-        //$count = $cursor->count();
-
-        if (isset($args['sort']) && is_array($args['sort'])) {
-            // Convert 'asc' and 'desc' to 1 and -1
-            foreach($args['sort'] as &$val) {
-                // Skip metadata sorting
-                if (is_array($val)) continue;
-
-                $val = strtolower($val);
-                if ($val == 'asc') {
-                    $val = 1;
-                } else if ($val == 'desc') {
-                    $val = -1;
-                } else {
-                    $val = gmp_sign($val);
-                }
-            }
-            $cursor->sort($args['sort']);
-        }
-
-        // Apply pagination
-        if (isset($args['offset']) || isset($args['limit'])) {
-            $offset = @intval($args['offset']);
-            $limit = @intval($args['limit']);
-
-            if ($offset > 0) $cursor->skip($offset);
-            if ($limit > 0) $cursor->limit($limit);
-        }
-
-        // Do not remove the 'result' entry. It is important for the findPaginated function
-        // If removed here, fix findPaginated to have a 'result' array entry
-        $ret = array(
-            'result' => array_map(array(get_called_class(), 'map'), iterator_to_array($cursor)),
-            // 'total' => $count
-        );
-
-        return $ret;
-    }
-
-    public static function count($query = array())
-    {
-        $query = static::_convertQuery($query);
-        return static::getCollection()->count($query);
-    }
-
-    /**
-     * A wrapper function to fetch records, using a paginator to determine
-     * the offset and limit. It will re-page and re-fetch if the currently
-     * set page number is out of bounds.
-     */
-    public static function findPaginated($paginator, $args = array())
-    {
-        $args['offset'] = $paginator->getOffset();
-        $args['limit'] = $paginator->getItems();
-
-        if (!isset($args['query'])) $args['query'] = array();
-
-        $count = static::count($args['query']);
-        $paginator->setTotal($count);
-
-        $args['offset'] = $paginator->getOffset();
-
-        $ret = static::find($args);
-        $ret['total'] = $count;
-
-        return $ret;
-    }
-
-    /**
-     * Saves the data member into the Mongo collection
+     * Overload the save() function
+     *
+     * Because the actual model is stored in the 'model' subdocument,
+     * we need to tell Mongo to update the 'model' subdocument instead
+     * of overwriting the whole document.
+     *
+     * TODO Would be best if this was moved into ZFE_Model_Mongo?
      */
     public function save()
     {
-        if (!$this->_isPersistable) {
-            throw new ZFE_Model_Mongo_Exception("Can not save a non-persistable instance");
-        }
-
-        $collection = static::getCollection();
-
-        $data = $this->_data;
-
-        if (isset($this->_id)) {
-            $data = array_merge(
-                array('_id' => $this->_id),
-                $data
-            );
-        }
+        $collection = self::getCollection();
 
         // Remove from model if value is null
-        foreach($data as $key => $val) {
-            if (is_null($val)) unset($data[$key]);
+        foreach($this->_data as $key => $val) {
+            if (is_null($val)) unset($this->_data[$key]);
         }
 
-        $collection->save($data);
+        $data = empty(static::$modelKey) ? $this->_data : array(static::$modelKey => $this->_data);
 
-        $this->_id = $data['_id'];
-        unset($data['_id']);
-        $this->_data = $data;
+        if (isset($this->_id)) {
+            $collection->update(
+                array('_id' => $this->_id),
+                array('$set' => $data)
+            );
+        } else {
+            $collection->save($data);
+
+            $this->_id = $data['_id'];
+            if (empty(static::$modelKey)) {
+                unset($data['_id']);
+                $this->_data = $data;
+            } else {
+                $this->_data = $data[static::$modelKey];
+            }
+        }
+
+        // Delete the reference cache
+        $objectId = (string) $this->_id;
+        if (isset(static::$_refCache[$objectId])) {
+            unset(static::$_refCache[$objectId]);
+        }
 
         // Remove from cache after saving
         $class = get_called_class();
         unset(self::$_cache[$class][$this->getIdentifier()]);
 
         // Run on*Updated functions on changed fields and clear it
-        foreach ($this->_changedFields as $fld => $oldValues) {
+        foreach($this->_changedFields as $fld => $oldValue) {
             $fn = ZFE_Util_String::toCamelCase("on-" . $fld . "-updated");
-            if (method_exists($this, $fn)) $this->$fn($oldValues);
+            if (method_exists($this, $fn)) $this->$fn($oldValue);
         }
         $this->_changedFields = array();
     }
 
     /**
-     * Removes the data associated with this object, from the Mongo collection
-     */
-    public function delete()
-    {
-        static::getCollection()->remove(array('_id' => $this->_id), array('justOne' => true));
-    }
-
-    /**
-     * Creates a reference of this instance to be used in another instance
+     * Inject a dt_delete: { $exists: false } into the default query
      *
-     * If there is no _id entry in this instance, we save this instance into
-     * MongoDB so that we get an _id identifier.
+     * This skips deleted articles for example. Should also work for other objects.
      */
-    public function getReference()
+    public static function __callStatic($name, $args)
     {
-        if (!isset($this->_id)) {
-            $this->save();
+        $dt_delete = empty(static::$modelKey) ? 'dt_delete' : static::$modelKey . '.dt_delete';
+
+        // Depending on the call, the filter is in a different argument
+        if ($name == 'count') {
+            $args[0][$dt_delete] = array('$exists' => false);
         }
 
-        return MongoDBRef::create(static::$collection, $this->_id);
+        if ($name == 'distinct') {
+            $args[0] = empty(static::$modelKey) ? $args[0] : static::$modelKey . '.' . $args[0];
+            $args[1][$dt_delete] = array('$exists' => false);
+        }
+
+        return parent::__callStatic($name, $args);
     }
 
     /**
-     * Maps data from the MongoDB database into an object instance
+     * Inject a dt_delete: { $exists: false } into the default query
+     *
+     * This skips deleted articles for example. Should also work for other objects.
+     *
+     * Had to do this separately for the find method since it is defined in the 
+     * ZFE_Model_Mongo class. A solution would be to have ZFE_Model_Mongo::__callStatic 
+     * call _doXxx() if it exists, and then we wouldn't need to have this function here, 
+     * since it would be dealt with by this class's __callStatic function.
+     */
+    public static function find($args = array())
+    {
+        if (!isset($args['query'])) $args['query'] = array();
+
+        $dt_delete = empty(static::$modelKey) ? "dt_delete" : static::$modelKey . ".dt_delete";
+        $args['query'][$dt_delete] = array('$exists' => false);
+
+        if (isset($args['fields']) && !empty(static::$modelKey)) {
+            $modelKey = static::$modelKey;
+            array_walk($args['fields'], function(&$item) use ($modelKey) {
+                $item = $modelKey . "." . $item;
+            });
+        }
+
+        return parent::find($args);
+    }
+
+    /**
+     * Overload the count function
+     *
+     * This is important so that find() and count() are consistent
+     */
+    public static function count($query = array())
+    {
+        $dt_delete = empty(static::$modelKey) ? "dt_delete" : static::$modelKey . ".dt_delete";
+        $query[$dt_delete] = array('$exists' => false);
+
+        return parent::count($query);
+    }
+
+    /**
+     * Overload the map function
+     *
+     * This is because the model needs to be initialized from the
+     * 'model' subdocument.
      */
     public static function map($data)
     {
-        $obj = new static();
+        if (empty(static::$modelKey)) return parent::map($data);
+
+        $_data = $data[static::$modelKey];
+        // Warning: this loses anyhing besides the model. Would have been better not to query the other fields in the first place.
 
         if (isset($data['_id'])) {
-            $obj->_id = $data['_id'];
-            unset($data['_id']);
+            $_data = array_merge(
+                array('_id' => $data['_id']),
+                $_data
+            );
         }
 
-        $obj->init($data);
+        return parent::map($_data);
+    }
 
-        return $obj;
+    /**
+     * getRandom
+     *
+     * Randomly gets a number of elements from the collection.
+     * Temporary function until MongoDB has an internal random function.
+     *
+     * This is of acceptable speed: about 0.025s to get the IDs, and about
+     * 0.015s to get the article models
+     */
+    public static function getRandom($n, $filter = array())
+    {
+        // Running time: 20us
+        $collection = static::getCollection();
+        $result = $collection->find($filter, array('_id' => 1));
+
+        // Running time: 0.025s
+        $ids = array_map(function($r) { return $r['_id']; }, array_values(iterator_to_array($result)));
+
+        $total = count($ids);
+        if ($total == 0) return array();
+
+        // Start with the whole set
+        $picked = $ids;
+
+        // If there are more in the whole set than asked for,
+        // randomly select $n from the set
+        if ($total > $n) {
+            $picked = array();
+            while(count($picked) < $n) {
+                $i = mt_rand(0, $total - 1);
+                $picked[$i] = $ids[$i];
+            }
+        }
+
+        $idFilter = array('query' => array('_id' => array_values($picked)));
+
+        // Running time: 0.015s
+        $records = static::find($idFilter);
+        $records = $records['result'];
+
+        shuffle($records);
+        return $records;
+    }
+
+    /**
+     * Get a statistics field
+     *
+     * ACQ models store the actual data in document.model. Other metadata
+     * is stored besides it. Statistics are one type of metadata, and
+     * the stats values are stored in document.stats.*
+     *
+     * Stats are very volatile, and are not stored within the class at
+     * runtime. Use statsInc whenever possible, for an atomic update
+     * function.
+     *
+     * Only valid if !empty(static::$modelKey).
+     *
+     * Should maybe be metaGet('stats', $key)? Or even meta('get', 'stats', $key)?
+     *
+     * Ex:
+     * $views = $article->statsGet('views');
+     *
+     * @param      string  $key    Stats field to get
+     * @return     mixed   Value of the stats field
+     */
+    public function statsGet($key)
+    {
+        if (!isset($this->_id)) {
+            throw new Exception("Can't have stats on non-existing objects");
+        }
+
+        $query = array('_id' => $this->_id);
+        $fields = array("stats.$key" => true);
+        $stats = static::getCollection()->findOne($query, $fields);
+
+        if (!array_key_exists('stats', $stats) || !array_key_exists($key, $stats['stats'])) {
+            return null;
+        }
+
+        return $stats['stats'][$key];
+    }
+
+    /**
+     * Set a statistics field
+     *
+     * Ex:
+     * $article->stats('views', $views + 1);
+     *
+     * @param      string  $key    Stats field to get / set
+     * @param      mixed   $value  Value to change to
+     */
+    public function statsSet($key, $value = null)
+    {
+        if (!isset($this->_id)) {
+            throw new Exception("Can't have stats on non-existing objects");
+        }
+
+        static::getCollection()->update(
+            array('_id' => $this->_id),
+            array('$set' => array("stats.$key" => $value))
+        );
+
+        return $value;
+    }
+
+    /**
+     * Increment a statistics field
+     *
+     * Redundant with statsSet(statsGet()+$inc), but this function
+     * is more efficient, and atomic.
+     *
+     * @param      string  $key     Field to increment
+     * @param      int     $amount  Amount to increment by
+     */
+    public function statsInc($key, $amount)
+    {
+        if (!isset($this->_id)) {
+            throw new Exception("Can't have stats on non-existing objects");
+        }
+
+        static::getCollection()->update(
+            array('_id' => $this->_id),
+            array('$inc' => array("stats.$key" => $amount))
+        );
     }
 }
