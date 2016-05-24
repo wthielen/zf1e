@@ -26,7 +26,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * A process cache for lazily loaded reference objects
      */
-    private $_refCache;
+    static protected $_refCache;
 
     /**
      * Tracking what has been changed
@@ -103,18 +103,20 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         $val = parent::__get($key);
 
-        if (is_null($val) && !isset($this->_data[$key])) return null;
-
-        if (MongoDBRef::isRef($val)) {
-            if (isset($this->_refCache[$key])) return $this->_refCache[$key];
-
-            $obj = static::getObject($val);
-
-            $this->_refCache[$key] = $obj;
-            return $obj;
+        if ($val === null && !isset($this->_data[$key])) {
+            return null;
         }
 
-        if ($val instanceof MongoDate) $val = self::getDate($val);
+        if (MongoDBRef::isRef($val)) {
+            $objectId = (string) $val['$id'];
+            if (!isset(static::$_refCache[$objectId])) {
+                static::$_refCache[$objectId] = static::getObject($val);
+            }
+
+            return static::$_refCache[$objectId];
+        } elseif ($val instanceof MongoDate) {
+            $val = self::getDate($val);
+        }
 
         return $val;
     }
@@ -603,6 +605,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Remove from cache after saving
         $class = get_called_class();
         unset(self::$_cache[$class][$this->getIdentifier()]);
+        $objectId = (string) $this->_id;
+        if (isset(static::$_refCache[$objectId])) {
+            unset(static::$_refCache[$objectId]);
+        }
 
         // Run on*Updated functions on changed fields and clear it
         foreach($this->_changedFields as $fld => $oldValues) {
