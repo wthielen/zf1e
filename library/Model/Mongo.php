@@ -24,11 +24,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     protected static $_cache;
 
     /**
-     * A process cache for lazily loaded reference objects
-     */
-    private $_refCache;
-
-    /**
      * Tracking what has been changed
      *
      * This is used by the save function to call on*Updated() functions.
@@ -42,8 +37,6 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     public function __construct()
     {
         parent::__construct();
-
-        $this->_refCache = array();
 
         static::getDatabase();
     }
@@ -98,23 +91,30 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * an explanatory exception will be thrown.
      *
      * Other conversions: MongoDate to DateTime
+     *
+     * @param string $key
+     * @return mixed
      */
     public function __get($key)
     {
         $val = parent::__get($key);
 
-        if (is_null($val) && !isset($this->_data[$key])) return null;
-
-        if (MongoDBRef::isRef($val)) {
-            if (isset($this->_refCache[$key])) return $this->_refCache[$key];
-
-            $obj = static::getObject($val);
-
-            $this->_refCache[$key] = $obj;
-            return $obj;
+        if ($val === null && !isset($this->_data[$key])) {
+            return null;
         }
 
-        if ($val instanceof MongoDate) $val = self::getDate($val);
+        if (MongoDBRef::isRef($val)) {
+            $objectId = (string) $val['$id'];
+            $object = ZFE_Model_RefCache::get($objectId, $key);
+            if ($object === null) {
+                $object = static::getObject($val);
+                ZFE_Model_RefCache::set($objectId, $key, $object);
+            }
+
+            return $object;
+        } elseif ($val instanceof MongoDate) {
+            $val = static::getDate($val);
+        }
 
         return $val;
     }
@@ -605,7 +605,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         unset(self::$_cache[$class][$this->getIdentifier()]);
 
         // Run on*Updated functions on changed fields and clear it
-        foreach($this->_changedFields as $fld => $oldValues) {
+        foreach ($this->_changedFields as $fld => $oldValues) {
             $fn = ZFE_Util_String::toCamelCase("on-" . $fld . "-updated");
             if (method_exists($this, $fn)) $this->$fn($oldValues);
         }
