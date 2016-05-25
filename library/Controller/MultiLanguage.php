@@ -50,9 +50,13 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
             if($_lang == 'zh_Hans') $_lang = 'zh-Hans';
             if($_lang == 'zh_Hant') $_lang = 'zh-Hant';
 
-            $this->view->headLink()->appendAlternate(
-                $mlPlugin->composeUrl($_lang), 'text/html', '', array('hreflang' => $_lang)
-            );
+            // Allowing override, since translated pages might have different URLs (slug, ID)
+            if (isset($this->customAlternateURL) && isset($this->customAlternateURL[$_lang])) {
+                $url = $this->customAlternateURL[$_lang];
+            } else {
+                $url = $mlPlugin->composeUrl($_lang);
+            }
+            $this->view->headLink()->appendAlternate($url, 'text/html', '', array('hreflang' => $_lang));
         }
 
         // If the action is in the i18nActions variable, update the script name to render
