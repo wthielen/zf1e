@@ -157,12 +157,12 @@ abstract class ZFE_Core
      * @link MW wiki /index.php/Discussion:Cache
      *
      * @param      string    $cache_id      Unique key identifying the cache entry
-     * @param      Function  $fn            Code returning the value to cache
+     * @param      Closure  $fn            Code returning the value to cache
      * @param      integer   $expire        Seconds before the cache expires
      * @param      boolean   $bypass        Ignore any cached value (useful to clear key or test code)
      * @param      boolean   $earlyRecache  [Experimental] Prevent post-expiry rush by having one client re-cache ahead of time [Experimental]
      *
-     * @return     Function
+     * @return     mixed
      */
     public static function cache($cache_id, $fn, $expire = null, $bypass = false, $earlyRecache = false)
     {
@@ -249,7 +249,7 @@ abstract class ZFE_Core
             return 0;
         }
     }
-    
+
     /**
      * The private function _dump() that does the actual dump for dump().
      * It adds the filename and linenumber from the backtrace in pretty-print

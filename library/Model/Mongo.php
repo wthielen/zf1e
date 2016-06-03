@@ -604,7 +604,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         // Remove from cache after saving
         $class = get_called_class();
-        unset(self::$_cache[$class][$this->getIdentifier()]);
+        unset(self::$_cache[$class][(string) $this->getIdentifier()]);
         $objectId = (string) $this->_id;
         if (isset(static::$_refCache[$objectId])) {
             unset(static::$_refCache[$objectId]);
