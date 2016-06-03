@@ -218,7 +218,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         $obj = $ref;
         if (MongoDBRef::isRef($ref)) {
-            $cls = self::$resource->getClass($ref['$ref']);
+            $cls = self::getResource()->getClass($ref['$ref']);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
                     "There is no model for the referred entity '" . $ref['$ref'] . "'.
