@@ -157,7 +157,7 @@ abstract class ZFE_Core
      * @link MW wiki /index.php/Discussion:Cache
      *
      * @param      string    $cache_id      Unique key identifying the cache entry
-     * @param      Closure  $fn            Code returning the value to cache
+     * @param      Closure   $fn            Code returning the value to cache
      * @param      integer   $expire        Seconds before the cache expires
      * @param      boolean   $bypass        Ignore any cached value (useful to clear key or test code)
      * @param      boolean   $earlyRecache  [Experimental] Prevent post-expiry rush by having one client re-cache ahead of time [Experimental]
