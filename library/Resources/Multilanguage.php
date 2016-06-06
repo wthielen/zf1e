@@ -31,7 +31,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     {
         $options = $this->getOptions();
         if (null === $options) return null;
-        
+
         // Throw exceptions if 'languages' is missing from the options
         if (!isset($options['languages']) || count($options['languages']) == 0) {
             throw new Zend_Application_Resource_Exception('Please specify one or more supported languages for your application: resources.multilanguage.languages[]');
@@ -50,12 +50,13 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      * Zend_Translate initializer
      *
      * Initializes the translator, and if necessary prepares a fallback
-     * translator as well using the default language, in case the message 
+     * translator as well using the default language, in case the message
      * IDs have not been translated in the current language.
      */
     public function initTranslate()
     {
         $options = $this->getOptions();
+        $cache = Zend_Registry::get('Zend_Cache');
 
         if (isset($options['adapter'])) {
             if (!isset($options['contentPath'])) {
@@ -71,12 +72,14 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             $config = array(
                 'adapter' => $adapter,
                 'locale' => $this->getLanguage(),
+                'cache' => $cache,
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getLanguage() . self::$_adapterExt[$adapter]
             );
 
             $fallback_config = array(
                 'adapter' => $adapter,
                 'locale' => $this->getLanguage(),
+                'cache' => $cache,
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter]
             );
 
@@ -94,6 +97,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Sets the language
+     * @param string $language
+     * @return ZFE_Resource_Multilanguage
      */
     public function setLanguage($language)
     {
@@ -248,5 +253,14 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         }
 
         return sprintf($txt, $n);
+    }
+
+    /**
+     * @param string $adapterName
+     * @param string $extension
+     */
+    public function addCustomAdapter($adapterName, $extension = '')
+    {
+        static::$_adapterExt[$adapterName] = $extension;
     }
 }
