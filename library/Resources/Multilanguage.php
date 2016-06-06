@@ -9,8 +9,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     private static $_adapterExt = array(
         'gettext' => '.mo',
-        'csv' => '.csv',
-        'ACQ_Translate' => 'mongo',
+        'csv' => '.csv'
     );
 
     /**
@@ -32,8 +31,6 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     {
         $options = $this->getOptions();
         if (null === $options) return null;
-
-        ACQ_Translation_FeatureHandler::setOptions($options);
 
         // Throw exceptions if 'languages' is missing from the options
         if (!isset($options['languages']) || count($options['languages']) == 0) {
@@ -100,6 +97,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Sets the language
+     * @param string $language
+     * @return ZFE_Resource_Multilanguage
      */
     public function setLanguage($language)
     {
@@ -254,5 +253,14 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
         }
 
         return sprintf($txt, $n);
+    }
+
+    /**
+     * @param string $adapterName
+     * @param string $extension
+     */
+    public function addCustomAdapter($adapterName, $extension = '')
+    {
+        static::$_adapterExt[$adapterName] = $extension;
     }
 }
