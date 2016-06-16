@@ -44,19 +44,19 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
         // Add alternate URLs for the translations
         $languages = $resource->getLanguages();
         unset($languages[$lang]);
-        foreach($languages as $_lang => $language) {
-            
-            //https://support.google.com/webmasters/answer/189077?hl=en
-            if($_lang == 'zh_Hans') $_lang = 'zh-Hans';
-            if($_lang == 'zh_Hant') $_lang = 'zh-Hant';
-
+        foreach($languages as $it_lang => $language) {
             // Allowing override, since translated pages might have different URLs (slug, ID)
-            if (isset($this->customAlternateURL) && isset($this->customAlternateURL[$_lang])) {
-                $url = $this->customAlternateURL[$_lang];
+            if (isset($this->customAlternateURL) && isset($this->customAlternateURL[$it_lang])) {
+                $url = $this->customAlternateURL[$it_lang];
             } else {
-                $url = $mlPlugin->composeUrl($_lang);
+                $url = $mlPlugin->composeUrl($it_lang);
             }
-            $this->view->headLink()->appendAlternate($url, 'text/html', '', array('hreflang' => $_lang));
+
+            $alt_lang = $it_lang;
+            //https://support.google.com/webmasters/answer/189077?hl=en
+            if($it_lang == 'zh_Hans') $alt_lang = 'zh-Hans';
+            if($it_lang == 'zh_Hant') $alt_lang = 'zh-Hant';
+            $this->view->headLink()->appendAlternate($url, 'text/html', '', array('hreflang' => $alt_lang));
         }
 
         // If the action is in the i18nActions variable, update the script name to render
