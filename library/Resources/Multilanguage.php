@@ -4,9 +4,19 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 {
     private $language;
 
+    /**
+     * @var Zend_Translate_Adapter
+     */
     private $translate;
+
+    /**
+     * @var Zend_Translate_Adapter
+     */
     private $fallback;
 
+    /**
+     * @var array
+     */
     private static $_adapterExt = array(
         'gettext' => '.mo',
         'csv' => '.csv'
@@ -78,7 +88,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
             $fallback_config = array(
                 'adapter' => $adapter,
-                'locale' => $this->getLanguage(),
+                'locale' => $this->getDefault(),
                 'cache' => $cache,
                 'content' => $path . DIRECTORY_SEPARATOR . $this->getDefault() . self::$_adapterExt[$adapter]
             );
@@ -110,6 +120,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Returns the currently set language
+     * @return string
      */
     public function getLanguage()
     {
@@ -119,6 +130,9 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     /**
      * Returns a list of languages, with their names in their respective 
      * languages
+     * @param string|bool $translate
+     * @return array
+     * @throws Exception
      */
     public function getLanguages($translate = false)
     {
@@ -146,6 +160,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Returns the default language
+     * @return string|null
      */
     public function getDefault()
     {
@@ -162,6 +177,8 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      *
      * If the given message ID has not been translated, and there is a fallback translator,
      * then it will be translated by the fallback translator.
+     * @param string $messageId
+     * @return string
      */
     public function _($messageId)
     {
@@ -189,6 +206,10 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      *
      * May add variable argument support, but then it would be unclear which argument
      * would decide the outcome. It could be set to take the first argument for that...
+     * @param string $messageId
+     * @param string $pluralId
+     * @param int $n
+     * @return string
      */
     public function _n($messageId, $pluralId, $n)
     {
@@ -213,6 +234,9 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      *
      * This supports variable arguments to be put in the placeholders of the translated
      * text.
+     * @param string $messageId
+     * @param string $ctxt
+     * @return string
      */
     public function _x($messageId, $ctxt)
     {
@@ -234,6 +258,12 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
 
     /**
      * Plural translation with context
+     *
+     * @param string $messageId
+     * @param string $pluralId
+     * @param int $n
+     * @param string $ctxt
+     * @return string
      */
     public function _nx($messageId, $pluralId, $n, $ctxt)
     {
