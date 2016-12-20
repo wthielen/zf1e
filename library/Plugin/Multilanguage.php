@@ -31,8 +31,8 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
             // If the main domain is accessed, use the browser language and
             // redirect to that subdomain
             if ($domain === $options['domain']) {
-                // Perform 302 redirect
-                header('HTTP/1.1 302');
+                // Perform 301 redirect
+                header('HTTP/1.1 301');
                 header('Location: ' . $this->composeUrl($language));
                 exit();
             }
