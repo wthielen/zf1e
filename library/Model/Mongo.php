@@ -1,15 +1,45 @@
 <?php
-
 /**
  * A base model class for classes which become Mongo documents.
+ * @method static aggregate(array $args)
+ * @method static findOne(array $args)
+ * @method static findAndModify(array $args)
+ * @method static remove(array $args)
+ * @method static drop(array $args)
+ * @method static distinct($field, array $args)
  */
 class ZFE_Model_Mongo extends ZFE_Model_Base
 {
+    const COMMAND_FIND_ONE = 'findOne';
+    const COMMAND_FIND_AND_MODIFY = 'findAndModify';
+    const COMMAND_REMOVE = 'remove';
+    const COMMAND_DROP = 'drop';
+    const COMMAND_AGGREGATE = 'aggregate';
+    const COMMAND_DISTINCT = 'distinct';
+
+    /**
+     * @var string
+     */
     protected $_id = null;
+
+    /**
+     * @var bool
+     */
     protected $_isPersistable = true;
 
+    /**
+     * @var ZFE_Resource_Mongo
+     */
     protected static $resource;
+
+    /**
+     * @var MongoDB
+     */
     protected static $db;
+
+    /**
+     * @var string
+     */
     protected static $collection;
 
     /**
@@ -19,12 +49,18 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      *
      * The process cache is to quickly refer to earlier loaded entities
      * when referring to them with their identifiers.
+     * @param string
      */
     protected static $_identifierField = 'id';
+
+    /**
+     * @var array
+     */
     protected static $_cache;
 
     /**
      * A process cache for lazily loaded reference objects
+     * @var array
      */
     static protected $_refCache;
 
@@ -32,8 +68,22 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * Tracking what has been changed
      *
      * This is used by the save function to call on*Updated() functions.
+     * @var array
      */
     protected $_changedFields = array();
+
+    /**
+     * Allowed command to be executed
+     * @var array
+     */
+    protected static $allowedCommands = [
+        self::COMMAND_FIND_ONE,
+        self::COMMAND_FIND_AND_MODIFY,
+        self::COMMAND_REMOVE,
+        self::COMMAND_DROP,
+        self::COMMAND_AGGREGATE,
+        self::COMMAND_DISTINCT,
+    ];
 
     /**
      * Mongo constructor, that calls the getDatabase() function, which in
@@ -43,46 +93,40 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     {
         parent::__construct();
 
-        $this->_refCache = array();
-
+        static::$_refCache = array();
         static::getDatabase();
     }
 
     /**
      * Do some conversions for some types
+     * @param string $key
+     * @param mixed $val
      */
     public function __set($key, $val)
     {
         // If it is a Mongo entity, convert it to its reference
-        if ($val instanceof ZFE_Model_Mongo) {
-            $val = $val->getReference();
-        }
-
-        // If it is a DateTime, convert it to MongoDate
-        if ($val instanceof DateTime) {
-            $val = new MongoDate($val->getTimestamp());
-        }
+        $val = $this->normalizeEntity($val);
 
         // If it is an array of Mongo entities or DateTimes
         if (is_array($val)) {
-            $_val = array();
-            foreach($val as $i => $v) {
-                if ($v instanceof ZFE_Model_Mongo) $v = $v->getReference();
-                if ($v instanceof DateTime) $v = new MongoDate($v->getTimestamp());
-                $_val[$i] = $v;
+            foreach ($val as &$entity) {
+                $entity = $this->normalizeEntity($entity);
             }
-            $val = $_val;
         }
 
-        $doCompare = !in_array($this->_status, array(self::STATUS_INITIALIZING, self::STATUS_IMPORT));
+        $doCompare = !in_array($this->_status, array(static::STATUS_INITIALIZING, static::STATUS_IMPORT));
 
         // Do not use $this->$key here because $val is already translated so we don't need
         // back-translate from $this::__get
-        if ($doCompare) $oldValue = parent::__get($key);
+        if ($doCompare) {
+            $oldValue = parent::__get($key);
+        }
         parent::__set($key, $val);
 
         if ($doCompare && $oldValue !== $val) {
-            if (!isset($this->_changedFields[$key])) $this->_changedFields[$key] = array();
+            if (!isset($this->_changedFields[$key])) {
+                $this->_changedFields[$key] = array();
+            }
             $this->_changedFields[$key][] = $oldValue;
         }
     }
@@ -98,6 +142,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * an explanatory exception will be thrown.
      *
      * Other conversions: MongoDate to DateTime
+     * @param string $key
+     * @return mixed
      */
     public function __get($key)
     {
@@ -127,17 +173,27 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      *
      * CAVEAT: when you import data into MongoDB, make sure the
      * ID sequence is set for that collection in your import script!
+     *
+     * @return mixed
      */
     public static function getNextId()
     {
         $sequenceCollection = static::getDatabase()->sequences;
 
-        $nextIdRecord = $sequenceCollection->findAndModify(array(),
+        $nextIdRecord = $sequenceCollection->findAndModify(
+            array(),
             array(
-                '$inc' => array(static::$collection => 1)
+                '$inc' => array(
+                    static::$collection => 1
+                ),
             ),
-            array(static::$collection => 1),
-            array('upsert' => true, 'new' => true)
+            array(
+                static::$collection => 1,
+            ),
+            array(
+                'upsert' => true,
+                'new' => true,
+            )
         );
 
         return $nextIdRecord[static::$collection];
@@ -145,16 +201,26 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Gets the maximum value of a field
+     *
+     * @param string $field
+     * @param array $filter
+     * @return mixed
      */
     public static function getMaximum($field, $filter = array())
     {
         $pipeline = array();
-        if (!empty($filter)) $pipeline[] = array('$match' => $filter);
+        if (!empty($filter)) {
+            $pipeline[] = array('$match' => $filter);
+        }
 
-        $pipeline[] = array('$group' => array(
-            '_id' => "",
-            'max' => array('$max' => '$' . $field)
-        ));
+        $pipeline[] = array(
+            '$group' => array(
+                '_id' => '',
+                'max' => array(
+                    '$max' => '$' . $field,
+                )
+            )
+        );
 
         $max = static::aggregate($pipeline);
         $value = count($max) ? $max[0]['max'] : null;
@@ -170,21 +236,31 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * Do not allow for full sub-object conversion because this will likely end up
      * in a deadlock or a memory overflow. Best to pass a $levels argument to keep
      * it controlled.
+     *
+     * @param array $keys
+     * @param int $levels
+     * @return array
      */
     public function toArray($keys = null, $levels = 0)
     {
-        if (empty($keys)) $keys = array_keys($this->_data);
+        if (empty($keys)) {
+            $keys = array_keys($this->_data);
+        }
 
         $ret = array();
-        foreach($keys as $key) {
+        foreach ($keys as $key) {
             $val = isset($this->_data[$key]) ? $this->getTranslation($key) : $this->$key;
 
             if ($levels > 0) {
-                if ($val instanceof ZFE_Model_Mongo) $val = $val->toArray(null, $levels - 1);
+                if ($val instanceof ZFE_Model_Mongo) {
+                    $val = $val->toArray(null, $levels - 1);
+                }
 
                 if (is_array($val)) {
-                    foreach($val as &$v) {
-                        if ($v instanceof ZFE_Model_Mongo) $v = $v->toArray(null, $levels - 1);
+                    foreach ($val as &$v) {
+                        if ($v instanceof ZFE_Model_Mongo) {
+                            $v = $v->toArray(null, $levels - 1);
+                        }
                     }
                 }
             }
@@ -195,18 +271,23 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $ret;
     }
 
+    /**
+     * @return array
+     */
     public function toSubdocument()
     {
         $ret = $this->_data;
-
-        foreach($ret as $key => $val) {
-            if ($val instanceof ZFE_Model_Mongo) $ret[$key] = $val->getReference();
-            if ($val instanceof DateTime) $ret[$key] = new MongoDate($val->getTimestamp());
+        foreach ($ret as $key => $val) {
+            $ret[$key] = $this->normalizeEntity($val);
         }
 
         return $ret;
     }
 
+    /**
+     * @param MongoDate $dt
+     * @return DateTime
+     */
     final public static function getDate(MongoDate $dt)
     {
         $val = new DateTime('@' . $dt->sec);
@@ -214,59 +295,97 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $val;
     }
 
-    public static function getObject($ref)
+    /**
+     * Get one Mongo object from reference
+     * @param array $reference
+     * @return array|null|ZFE_Model_Mongo
+     * @throws ZFE_Model_Mongo_Exception
+     */
+    public static function getObject($reference)
     {
-        $obj = $ref;
-        if (MongoDBRef::isRef($ref)) {
-            $cls = self::getResource()->getClass($ref['$ref']);
+        $obj = $reference;
+        if (MongoDBRef::isRef($reference)) {
+            /** @var ZFE_Model_Mongo $cls */
+            $cls = self::getResource()->getClass($reference['$ref']);
             if (!class_exists($cls)) {
                 throw new ZFE_Model_Mongo_Exception(
-                    "There is no model for the referred entity '" . $ref['$ref'] . "'.
-                    Consider creating $cls or add a class mapping in resources.mongo.mapping[]."
+                    'There is no model for the referred entity \'' . $reference['$ref'] . '\'.
+                    Consider creating $cls or add a class mapping in resources.mongo.mapping[].'
                 );
             }
 
-            $obj = MongoDBRef::get(static::getDatabase(), $ref);
-            $obj = is_null($obj) ? $obj : $cls::map($obj);
+            $obj = MongoDBRef::get(static::getDatabase(), $reference);
+            if ($obj !== null) {
+                $obj = $cls::map($obj);
+            }
         }
 
         return $obj;
     }
 
+    /**
+     * @param array $references
+     * @return array
+     */
+    public static function getObjects(array $references)
+    {
+        $objects = [];
+        if (count($references)) {
+            $query = [
+                'query' => [
+                    '_id' => $references,
+                ],
+            ];
+
+            $result = static::find($query);
+            $objects = array_values($result['result']);
+        }
+
+        return $objects;
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $val
+     * @param string $lang
+     * @throws Exception
+     */
     public function setTranslation($key, $val, $lang)
     {
-        // If it is a Mongo entity, convert it to its reference
-        if ($val instanceof ZFE_Model_Mongo) {
-            $val = $val->getReference();
-        }
-
-        // If it is a DateTime, convert it to MongoDate
-        if ($val instanceof DateTime) {
-            $val = new MongoDate($val->getTimestamp());
-        }
-
+        $val = $this->normalizeEntity($val);
         parent::setTranslation($key, $val, $lang);
     }
 
+    /**
+     * @param string $key
+     * @param string|null $lang
+     * @return array|null|ZFE_Model_Mongo
+     * @throws ZFE_Model_Mongo_Exception
+     */
     public function getTranslation($key, $lang = null)
     {
         $translation = parent::getTranslation($key, $lang);
-
         return static::getObject($translation);
     }
 
     /**
      * Gets the Mongo collection corresponding to this model
+     *
+     * @return MongoCollection
+     * @throws ZFE_Model_Mongo_Exception
      */
     public static function getCollection()
     {
-        if (is_null(static::$collection)) {
-            throw new ZFE_Model_Mongo_Exception("Please specify the collection name: protected static \$collection");
+        if (static::$collection === null) {
+            throw new ZFE_Model_Mongo_Exception('Please specify the collection name: protected static $collection');
         }
 
         return static::getDatabase()->{static::$collection};
     }
 
+    /**
+     * @return MongoGridFS
+     */
     final public static function getGridFS()
     {
         return static::getDatabase()->getGridFS(static::$collection);
@@ -277,6 +396,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      *
      * Because the constructor calls this function, nothing needs to be done in the
      * application's bootstrap. Just create a Mongo document object :)
+     *
+     * @return MongoDB
      */
     final public static function getDatabase()
     {
@@ -290,6 +411,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * A wrapper around execute() that will throw a PHP exception when something goes
      * wrong here.
+     *
+     * @param string $code
+     * @param array $args
+     * @return mixed
+     * @throws ZFE_Model_Mongo_Exception
      */
     final public static function execute($code, $args = array())
     {
@@ -307,6 +433,8 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * Registers the MongoDB application plugin resource and initializes it, when a
      * connection is requested. It stores the plugin resource as a static entry in
      * the model.
+     *
+     * @return ZFE_Resource_Mongo
      */
     final public static function getResource()
     {
@@ -319,19 +447,15 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Forwards some function calls to the MongoCollection functions
+     *
+     * @param string $name
+     * @param array|mixed $args
+     * @throws ZFE_Model_Mongo_Exception
+     * @return mixed
      */
     public static function __callStatic($name, $args)
     {
-        $whitelist = array(
-            'findOne',
-            'findAndModify',
-            'remove',
-            'drop',
-            'aggregate',
-            'distinct'
-        );
-
-        if (!in_array($name, $whitelist)) {
+        if (!in_array($name, static::$allowedCommands)) {
             throw new ZFE_Model_Mongo_Exception("Unknown static function $name");
         }
 
@@ -339,19 +463,34 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         // Do some conversion if needed
         if ($ret) {
-            switch($name) {
-            case 'findOne':
-                $ret = static::map($ret);
-                break;
-            case 'aggregate':
-                if ($ret['ok'] == 0) throw new ZFE_Model_Mongo_Exception($ret['errmsg'], $ret['code']);
-                $ret = $ret['result'];
-                break;
-            case 'distinct':
-                foreach($ret as &$val) {
-                    if (MongoDBRef::isRef($val)) $val = static::getObject($val);
-                }
-                break;
+            switch ($name) {
+                case static::COMMAND_FIND_ONE:
+                    $ret = static::map($ret);
+                    break;
+                case static::COMMAND_AGGREGATE:
+                    if ($ret['ok'] == 0) {
+                        throw new ZFE_Model_Mongo_Exception($ret['errmsg'], $ret['code']);
+                    }
+                    $ret = $ret['result'];
+                    break;
+                case static::COMMAND_DISTINCT:
+                    $result = $references = $referenceIds = [];
+                    foreach ($ret as $val) {
+                        if (MongoDBRef::isRef($val)) {
+                            $referenceIds[] = $val['$id'];
+                            /** @var ZFE_Model_Mongo $class */
+                            $class = static::getResource()->getClass($val['$ref']);
+                        } else {
+                            $result[] = $val;
+                        }
+                    }
+
+                    if (isset($class)) {
+                        $references = $class::getObjects($referenceIds);
+                    }
+
+                    $ret = array_merge($result, $references);
+                    break;
             }
         }
 
@@ -362,12 +501,18 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * Gets an entry from the database, given the identifier(s) and the field name
      *
      * If no field name is given, the stored _identifierField is used.
+     *
+     * @param string $id
+     * @param string $field
+     * @return array|null
      */
     public static function get($id, $field = null)
     {
         $field = is_null($field) ? static::$_identifierField : $field;
         $class = get_called_class();
-        if (!isset(self::$_cache[$class])) self::$_cache[$class] = array();
+        if (!isset(self::$_cache[$class])) {
+            self::$_cache[$class] = array();
+        }
 
         // Multiple parameters case:
         // Checks if there are any IDs not in the cache, which we need
@@ -383,7 +528,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             if (count($toFetch)) {
                 $fetched = static::find(array('query' => array($field => $toFetch)));
 
-                foreach($fetched['result'] as $entry) {
+                foreach ($fetched['result'] as $entry) {
                     self::$_cache[$class][$entry->getIdentifier()] = $entry;
                 }
             }
@@ -396,7 +541,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // it is not already stored in the cache, and then return from cache.
         if (!isset(self::$_cache[$class][$id])) {
             $found = static::findOne(array('query' => array($field => $id)));
-            if ($found) self::$_cache[$class][$id] = $found;
+            if ($found) {
+                self::$_cache[$class][$id] = $found;
+            }
         }
 
         return isset(self::$_cache[$class][$id]) ? self::$_cache[$class][$id] : null;
@@ -405,6 +552,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     /**
      * Returns the identifier of this entry using the
      * protected $_identifierField field
+     *
+     * @param null $field
+     * @return string
      */
     public function getIdentifier($field = null)
     {
@@ -427,7 +577,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
     }
 
     /**
-     * Convert $query items for monog. Eg. convert {'key': [values]} to {'key': '$in': [values]} and
+     * Convert $query items for mongo. Eg. convert {'key': [values]} to {'key': '$in': [values]} and
      * convert objects to their mongo ID
      * @param array $query ACQ mongo query to be converted
      * @return array $query PHP mongo ready query
@@ -439,8 +589,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $val = $val instanceof ZFE_Model_Mongo ? $val->getReference() : $val;
         };
 
-        array_walk($query, function(&$val, $key) use($replaceWithReference) {
-            if ($key[0] == '$') return;
+        array_walk($query, function(&$val, $key) use ($replaceWithReference) {
+            if ($key[0] == '$') {
+                return;
+            }
 
             // Special case to take MongoIds out of references
             if ($key == '_id' && is_array($val)) {
@@ -451,18 +603,27 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
                 }
 
                 // Create an $in operation with an array of IDs
-                $val = array('$in' => array_map(function($ref) {
-                    return MongoDBRef::isRef($ref) ? $ref['$id'] : $ref;
-                }, $val));
+                $val = array(
+                    '$in' => array_map(
+                        function($ref) {
+                            return MongoDBRef::isRef($ref) ? $ref['$id'] : $ref;
+                        },
+                        $val
+                    )
+                );
 
                 return;
             }
 
             if (is_array($val)) {
                 $keys = array_keys($val);
-                $mongoOperators = array_reduce($keys, function($u, $v) {
-                    return $u || $v[0] == '$';
-                }, false);
+                $mongoOperators = array_reduce(
+                    $keys,
+                    function($u, $v) {
+                        return $u || $v[0] == '$';
+                    },
+                    false
+                );
 
                 if (!$mongoOperators) {
                     array_walk($val, $replaceWithReference);
@@ -485,6 +646,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * To be able to paginate results, I have taken out the 'find' call and made it
      * its own function. It returns an array containing the result set, and the
      * total number of results, useful for pagination
+     *
+     * @param array $args
+     * @return array
+     * @throws ZFE_Model_Mongo_Exception
      */
     public static function find($args = array())
     {
@@ -495,7 +660,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         // Add projection keys for $meta sort entries
         if (isset($args['sort']) && is_array($args['sort'])) {
-            foreach($args['sort'] as $fld => $entry) {
+            foreach ($args['sort'] as $fld => $entry) {
                 if (is_array($entry) && isset($entry['$meta'])) {
                     $args['fields'][$fld] = $entry;
                 }
@@ -507,14 +672,16 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
         if (isset($args['sort']) && is_array($args['sort'])) {
             // Convert 'asc' and 'desc' to 1 and -1
-            foreach($args['sort'] as &$val) {
+            foreach ($args['sort'] as &$val) {
                 // Skip metadata sorting
-                if (is_array($val)) continue;
+                if (is_array($val)) {
+                    continue;
+                }
 
                 $val = strtolower($val);
                 if ($val == 'asc') {
                     $val = 1;
-                } else if ($val == 'desc') {
+                } elseif ($val == 'desc') {
                     $val = -1;
                 } else {
                     $val = gmp_sign($val);
@@ -528,8 +695,12 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             $offset = @intval($args['offset']);
             $limit = @intval($args['limit']);
 
-            if ($offset > 0) $cursor->skip($offset);
-            if ($limit > 0) $cursor->limit($limit);
+            if ($offset > 0) {
+                $cursor->skip($offset);
+            }
+            if ($limit > 0) {
+                $cursor->limit($limit);
+            }
         }
 
         // Do not remove the 'result' entry. It is important for the findPaginated function
@@ -542,6 +713,11 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         return $ret;
     }
 
+    /**
+     * @param array $query
+     * @return int
+     * @throws ZFE_Model_Mongo_Exception
+     */
     public static function count($query = array())
     {
         $query = static::_convertQuery($query);
@@ -552,13 +728,19 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      * A wrapper function to fetch records, using a paginator to determine
      * the offset and limit. It will re-page and re-fetch if the currently
      * set page number is out of bounds.
+     *
+     * @param ZFE_Util_Paginator $paginator
+     * @param array $args
+     * @return array
      */
     public static function findPaginated($paginator, $args = array())
     {
         $args['offset'] = $paginator->getOffset();
         $args['limit'] = $paginator->getItems();
 
-        if (!isset($args['query'])) $args['query'] = array();
+        if (!isset($args['query'])) {
+            $args['query'] = array();
+        }
 
         $count = static::count($args['query']);
         $paginator->setTotal($count);
@@ -573,6 +755,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Saves the data member into the Mongo collection
+     * @throws ZFE_Model_Mongo_Exception
      */
     public function save()
     {
@@ -592,8 +775,10 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         // Remove from model if value is null
-        foreach($data as $key => $val) {
-            if (is_null($val)) unset($data[$key]);
+        foreach ($data as $key => $val) {
+            if (is_null($val)) {
+                unset($data[$key]);
+            }
         }
 
         $collection->save($data);
@@ -611,10 +796,13 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         }
 
         // Run on*Updated functions on changed fields and clear it
-        foreach($this->_changedFields as $fld => $oldValues) {
-            $fn = ZFE_Util_String::toCamelCase("on-" . $fld . "-updated");
-            if (method_exists($this, $fn)) $this->$fn($oldValues);
+        foreach ($this->_changedFields as $field => $oldValues) {
+            $fn = ZFE_Util_String::toCamelCase('on-' . $field . '-updated');
+            if (method_exists($this, $fn)) {
+                $this->$fn($oldValues);
+            }
         }
+
         $this->_changedFields = array();
     }
 
@@ -631,6 +819,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
      *
      * If there is no _id entry in this instance, we save this instance into
      * MongoDB so that we get an _id identifier.
+     *
+     * @return array
+     * @throws ZFE_Model_Mongo_Exception
      */
     public function getReference()
     {
@@ -643,6 +834,9 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
 
     /**
      * Maps data from the MongoDB database into an object instance
+     *
+     * @param array $data
+     * @return ZFE_Model_Mongo
      */
     public static function map($data)
     {
@@ -656,5 +850,26 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         $obj->init($data);
 
         return $obj;
+    }
+
+    /**
+     * Normalize Mongo entity
+     *
+     * @param mixed $entity
+     * @return mixed|MongoDBRef|MongoDate
+     */
+    protected function normalizeEntity($entity)
+    {
+        // If it is a Mongo entity, convert it to its reference
+        if ($entity instanceof ZFE_Model_Mongo) {
+            $entity = $entity->getReference();
+        }
+
+        // If it is a DateTime, convert it to MongoDate
+        if ($entity instanceof DateTime) {
+            $entity = new MongoDate($entity->getTimestamp());
+        }
+
+        return $entity;
     }
 }
