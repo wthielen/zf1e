@@ -199,4 +199,14 @@ abstract class ZFE_Util_String
 
         return mb_strlen($content);
     }
+
+    /**
+     * Will convert http://... instances to <a href="http://...">http://...
+     * @param string $text The full text containing the urls
+     * @return string
+     */
+    public static function convertUrlsToLinks($text)
+    {
+        return  preg_replace('/(?:(https?):\/\/([^\s<]+)|(www\.[^\s<]+?\.[^\s<]+))(?<![\.,:])/', '<a href="$0">$0</a>', $text);
+    }
 }

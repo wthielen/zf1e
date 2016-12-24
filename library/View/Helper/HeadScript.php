@@ -38,11 +38,11 @@ class ZFE_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
         // Collect JS files
         $compressable = array();
         foreach($items as $key => $item) {
-            $file = basename($item->attributes["src"]);
-            if (in_array($file, $this->doNotBundle)) continue;
-
             if (isset($item->attributes['src'])) {
                 $src = $item->attributes['src'];
+
+                $file = basename($src);
+                if (in_array($file, $this->doNotBundle)) continue;
 
                 // If the source refers to a local file, process it
                 if (preg_match('~^(\w+:)?//~', $src) === 0) {

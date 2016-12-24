@@ -31,8 +31,8 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
             // If the main domain is accessed, use the browser language and
             // redirect to that subdomain
             if ($domain === $options['domain']) {
-                // Perform 302 redirect
-                header('HTTP/1.1 302');
+                // Perform 301 redirect
+                header('HTTP/1.1 301');
                 header('Location: ' . $this->composeUrl($language));
                 exit();
             }
@@ -47,7 +47,7 @@ class ZFE_Plugin_Multilanguage extends Zend_Controller_Plugin_Abstract
         }
 
         // healthcheck: only use whitelisted languages
-        if (!in_array($language, $options["languages"])) $language = $options["language"][0];
+        if (!in_array($language, $options["languages"])) $language = $options["languages"][0];
 
         // Store the language in the resource
         // This also initializes the translation resource
