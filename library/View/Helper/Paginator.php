@@ -122,7 +122,7 @@ class ZFE_View_Helper_Paginator extends Zend_View_Helper_Abstract
             $html .= '</li>';
 
             $html .= '<li class="last">';
-            $url = $baseUrl . '?' . http_build_query(array('p' => $pageInfo['pages']));
+            $url = $baseUrl . '?' . http_build_query(array_merge($urlParams, array('p' => $pageInfo['pages'])));
             $html .= '<a href="' . $url . '" data-page="' . $pageInfo['pages'] . '" rel="nofollow">' . static::$style['last'] . '</a>';
             $html .= '</li>';
         }
