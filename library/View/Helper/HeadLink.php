@@ -46,6 +46,7 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                     if (in_array($file, $this->doNotBundle)) continue;
 
                     if (ZFE_Util_String::startsWith($item->href, "http://")) continue;
+                    if (ZFE_Util_String::startsWith($item->href, "https://")) continue;
                     if (ZFE_Util_String::startsWith($item->href, "//")) continue;
 
                     if (!isset($compressable[$item->media])) {
@@ -79,8 +80,8 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
         // Check if the original CSS files have been updated since the
         // last minification
         foreach($hashes as $media => $hash) {
-            $regenerate = true;
-            $filename = sha1($media . $hash) . ".css";
+            $latestChange = max($mtimes[$media]);
+            $filename = sha1($media . $hash . $latestChange) . ".css";
 
             $cachedir = $this->_minifier->getCacheDir();
             $path = $_SERVER['DOCUMENT_ROOT'] . $cachedir;
@@ -90,16 +91,17 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                 mkdir($path, 0775, true);
             }
 
-            if (file_exists($path . "/" . $filename)) {
-                $mtime = filemtime($path . "/" . $filename);
-                $regenerate = array_reduce($mtimes[$media], function($u, $v) use ($mtime) {
-                    return $u || $v > $mtime;
-                }, false);
-            }
+            //Since the latestChange is part of the filename hash, any change in the file
+            //will result in a different name for the bundle. If the bundle exist, then it
+            //is up to date.
+            $regenerate = !file_exists($path . "/" . $filename);
+            //Sadly this means there will be many outdated files. The cache folder should
+            //be cleaned periodically.
 
             // If any CSS file in this media group has been updated since the last
             // minification, collect the content again, and store it in the cached version
             if ($regenerate) {
+                //error_log('--- CSS bundling (' . $media . $hash . $latestChange . ') ---'); // for monitoring
                 $cssContent = '';
                 foreach($compressable[$media] as $item) {
                     $file = $_SERVER['DOCUMENT_ROOT'] . $item->href;
@@ -112,7 +114,7 @@ class ZFE_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                 file_put_contents($path . "/" . $filename, $cssContent);
             }
 
-            $this->appendStylesheet($cachedir . "/" . $filename, $media);
+            $this->appendStylesheet($cachedir . "/" . $filename . '?v=' . $latestChange, $media);
         }
 
         ZFE_Util_Stopwatch::trigger(__METHOD__);
