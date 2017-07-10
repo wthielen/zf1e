@@ -23,6 +23,11 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
     );
 
     /**
+     * @var array
+     */
+    private $languages = [];
+
+    /**
      * Resource initializer
      *
      * To use this resource, please add the following configuration to your
@@ -136,26 +141,28 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      */
     public function getLanguages($translate = false)
     {
-        $options = $this->getOptions();
+        if (empty($this->languages)) {
+            $options = $this->getOptions();
 
-        $ret = array();
-        if (@is_array($options['languages'])) {
-            foreach($options['languages'] as $lang) {
-                try {
-                    if (is_bool($translate)) {
-                        $target = $translate ? $lang : $this->language;
-                    } else {
-                        $target = $translate;
+            $this->languages = [];
+            if (@is_array($options['languages'])) {
+                foreach($options['languages'] as $lang) {
+                    try {
+                        if (is_bool($translate)) {
+                            $target = $translate ? $lang : $this->language;
+                        } else {
+                            $target = $translate;
+                        }
+                        $str = Zend_Locale_Data::getContent($target, 'language', $lang);
+                        $first = mb_strtoupper(mb_substr($str, 0, 1));
+                        $this->languages[$lang] = $first . mb_substr($str, 1);
+                    } catch (Exception $e) {
                     }
-                    $str = Zend_Locale_Data::getContent($target, 'language', $lang);
-                    $first = mb_strtoupper(mb_substr($str, 0, 1));
-                    $ret[$lang] = $first . mb_substr($str, 1);
-                } catch (Exception $e) {
                 }
             }
         }
 
-        return $ret;
+        return $this->languages;
     }
 
     /**
