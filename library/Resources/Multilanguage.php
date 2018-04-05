@@ -141,10 +141,9 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      */
     public function getLanguages($translate = false)
     {
-        if (empty($this->languages)) {
+        if (!isset($this->languages[$translate]) || empty($this->languages[$translate])) {
+            $this->languages[$translate] = [];
             $options = $this->getOptions();
-
-            $this->languages = [];
             if (@is_array($options['languages'])) {
                 foreach($options['languages'] as $lang) {
                     try {
@@ -155,14 +154,14 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
                         }
                         $str = Zend_Locale_Data::getContent($target, 'language', $lang);
                         $first = mb_strtoupper(mb_substr($str, 0, 1));
-                        $this->languages[$lang] = $first . mb_substr($str, 1);
+                        $this->languages[$translate][$lang] = $first . mb_substr($str, 1);
                     } catch (Exception $e) {
                     }
                 }
             }
         }
 
-        return $this->languages;
+        return $this->languages[$translate];
     }
 
     /**
