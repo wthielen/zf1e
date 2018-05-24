@@ -99,11 +99,11 @@ class ZFE_View_Helper_Multilanguage extends Zend_View_Helper_Abstract
         return call_user_func_array(array($this->resource, "_"), $args);
     }
 
-    public function _n($messageId, $pluralId, $n)
+    public function _n($messageId, $pluralId, $n, $localeFormat = false)
     {
         if (null === $this->resource) return $messageId;
 
-        return $this->resource->_n($messageId, $pluralId, $n);
+        return $this->resource->_n($messageId, $pluralId, $n, $localeFormat);
     }
 
     public function _x($messageId, $ctxt)
