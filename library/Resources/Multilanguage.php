@@ -215,9 +215,10 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
      * @param string $messageId
      * @param string $pluralId
      * @param int $n
+     * @param bool $localeFormat Format the number in locale
      * @return string
      */
-    public function _n($messageId, $pluralId, $n)
+    public function _n($messageId, $pluralId, $n, $localeFormat = false)
     {
         if (null === $this->translate) {
             return $messageId;
@@ -232,7 +233,7 @@ class ZFE_Resource_Multilanguage extends Zend_Application_Resource_ResourceAbstr
             ));
         }
 
-        return sprintf($txt, $n);
+        return $localeFormat ? sprintf($txt, Zend_Locale_Format::toNumber($n)) : sprintf($txt, $n);
     }
 
     /**
