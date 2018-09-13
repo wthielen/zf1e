@@ -222,7 +222,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
             )
         );
 
-        $max = static::aggregate($pipeline);
+        $max = static::aggregate($pipeline, ['cursor' => true]);
         $value = count($max) ? $max[0]['max'] : null;
 
         return $value;
@@ -540,7 +540,7 @@ class ZFE_Model_Mongo extends ZFE_Model_Base
         // Simply fetch it from the database and store it in the cache if
         // it is not already stored in the cache, and then return from cache.
         if (!isset(self::$_cache[$class][$id])) {
-            $found = static::findOne(array('query' => array($field => $id)));
+            $found = static::findOne(array($field => $id));
             if ($found) {
                 self::$_cache[$class][$id] = $found;
             }
