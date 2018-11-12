@@ -37,6 +37,7 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
         $this->port = isset($o['port']) ? $o['port'] : ini_get('mongo.default_port');
         $this->username = isset($o['username']) && !empty($o['username']) ? $o['username'] : null;
         $this->password = isset($o['password']) && !empty($o['password']) ? $o['password'] : null;
+        $this->authSource = isset($o['authSource']) && !empty($o['authSource']) ? $o['authSource'] : null;
         $this->database = $o['database'];
 
         if (isset($o['mapping']) && is_array($o['mapping'])) {
@@ -63,6 +64,9 @@ class ZFE_Resource_Mongo extends Zend_Application_Resource_ResourceAbstract
                 $options["username"] = $this->username;
                 $options["password"] = $this->password;
                 $options["db"] = $this->database;
+                if ($this->authSource) {
+                    $options["authSource"] = $this->authSource;
+                }
             }
 
             $uri .= $this->socket ? $this->socket : $this->host . ":" . $this->port;
