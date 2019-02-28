@@ -1,5 +1,5 @@
 {
-    "name": "wthielen/zf1e",
+    "name": "vendor/zf1e",
     "description": "Zend Framework 1 Extension library", 
     "license": "BSD-2-Clause",
     "authors": [
@@ -18,6 +18,9 @@
         "classmap": [
             "library/"
         ]
+    },
+    "config": {
+        "secure-http": false
     },
     "require-dev": {
         "phpunit/phpunit": "4.*"
