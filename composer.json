@@ -2,6 +2,7 @@
     "name": "vendor/zf1e",
     "description": "Zend Framework 1 Extension library", 
     "license": "BSD-2-Clause",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "Wouter Thielen",
