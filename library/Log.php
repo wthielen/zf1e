@@ -2,7 +2,7 @@
 
 /**
  * Class ZFE_Log
- * `@method static crit($message)
+ * @method static crit($message)
  * @method static warn($message)
  * @method static notice($message)
  */

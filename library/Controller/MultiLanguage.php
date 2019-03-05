@@ -56,7 +56,7 @@ class ZFE_Controller_MultiLanguage extends ZFE_Controller_Base
             //https://support.google.com/webmasters/answer/189077?hl=en
             if($it_lang == 'zh_Hans') $alt_lang = 'zh-Hans';
             if($it_lang == 'zh_Hant') $alt_lang = 'zh-Hant';
-            $this->view->headLink()->appendAlternate($url, 'text/html', '', array('hreflang' => $alt_lang));
+            $this->view->headLink()->appendAlternate($url, null, '', array('hreflang' => $alt_lang));
         }
 
         // If the action is in the i18nActions variable, update the script name to render
