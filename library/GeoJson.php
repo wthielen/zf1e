@@ -80,4 +80,27 @@ class ZFE_GeoJson
     {
         return json_encode($this->toArray());
     }
+
+    public function getDistanceFrom(ZFE_GeoJson $p2, $unit = 'K')
+    {
+        list($lat1, $lon1) = $this->getCoordinates();
+        list($lat2, $lon2) = $p2->getCoordinates();
+
+        $theta = $lon1 - $lon2;
+        $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+        $dist = acos($dist);
+        $dist = rad2deg($dist);
+        $miles = $dist * 60 * 1.1515;
+        $unit = strtoupper($unit);
+
+        if ($unit == 'K') {
+            $value = ($miles * 1.609344);
+        } else if ($unit == 'N') {
+            $value = ($miles * 0.8684);
+        } else {
+            $value = $miles;
+        }
+
+        return $value;
+    }
 }
